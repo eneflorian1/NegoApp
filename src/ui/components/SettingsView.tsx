@@ -14,6 +14,7 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
   const [showSuccess, setShowSuccess] = useState(false);
   const [waQR, setWaQR] = useState<string | null>(null);
   const [waConnecting, setWaConnecting] = useState(false);
+  const [waError, setWaError] = useState<string | null>(null);
 
   // Poll QR code when connecting
   useEffect(() => {
@@ -26,6 +27,13 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
         if (data.status?.connected) {
           setWaConnecting(false);
           setWaQR(null);
+          setWaError(null);
+        }
+        // Detect initialization failure
+        if (data.status?.error && !data.status?.initializing && !data.status?.connected) {
+          setWaConnecting(false);
+          setWaQR(null);
+          setWaError(data.status.error);
         }
       } catch { /* ignore */ }
     }, 2000);
@@ -52,11 +60,18 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
   const handleWhatsAppConnect = async () => {
     setWaConnecting(true);
     setWaQR(null);
+    setWaError(null);
     try {
-      await fetch('/api/whatsapp/connect', { method: 'POST' });
+      const res = await fetch('/api/whatsapp/connect', { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'error') {
+        setWaConnecting(false);
+        setWaError(data.error || 'Connection failed');
+      }
     } catch (err) {
       console.error('WhatsApp connect error:', err);
       setWaConnecting(false);
+      setWaError('Network error connecting to WhatsApp');
     }
   };
 
@@ -179,8 +194,8 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
                 <div>
                   <p className="font-medium text-zinc-300">Not Connected</p>
                   <p className="text-xs text-zinc-500">Connect to send WhatsApp messages</p>
-                  {waStatus?.error && (
-                    <p className="text-[10px] text-red-400 mt-1">{waStatus.error}</p>
+                  {(waError || waStatus?.error) && (
+                    <p className="text-[10px] text-red-400 mt-1">{waError || waStatus.error}</p>
                   )}
                 </div>
               </div>

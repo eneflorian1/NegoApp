@@ -22,7 +22,7 @@
     "motion": "^12.23.24",
     "p-queue": "^8.0.0",
     "puppeteer": "^22.0.0",
-    "puppeteer-core": "^24.39.1",
+    "puppeteer-core": "^22.0.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "qrcode": "^1.5.3",
