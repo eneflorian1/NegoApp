@@ -47,6 +47,7 @@ class WhatsAppClient extends EventEmitter {
             '--disable-dev-shm-usage',
             '--disable-gpu',
             '--single-process',
+            '--disable-features=site-per-process',
           ],
         },
       });
@@ -105,7 +106,14 @@ class WhatsAppClient extends EventEmitter {
         });
       });
 
-      await this.client.initialize();
+      // Fire-and-forget: don't block the HTTP response waiting for QR/auth
+      this.client.initialize().catch((err) => {
+        this.isInitializing = false;
+        this.lastError = err.message;
+        console.error('[WhatsApp] Initialize error:', err.message);
+        this.emit('error', err);
+      });
+
       return { status: 'initializing' };
     } catch (err) {
       this.isInitializing = false;
