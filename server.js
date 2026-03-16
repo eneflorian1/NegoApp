@@ -1447,8 +1447,8 @@ app.get('/api/health', (req, res) => res.json({ ok: true, uptime: process.uptime
 const distPath = join(__dirname, 'dist');
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
-  // SPA catch-all: any non-API route serves index.html
-  app.get('*', (req, res) => {
+  // SPA catch-all: any non-API route serves index.html (Express 5 syntax)
+  app.get('/{*splat}', (req, res) => {
     res.sendFile(join(distPath, 'index.html'));
   });
   console.log(`[Server] Serving frontend from ${distPath}`);
