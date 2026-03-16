@@ -7,37 +7,63 @@ on:
 
 jobs:
   web-deploy:
-    name: Deploy
+    name: Build & Deploy
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
     - name: Get latest code
       uses: actions/checkout@v4
-      
+
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '24'
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm install
-      
-    - name: Build project
+
+    - name: Build frontend
       run: npm run build
-      
-    - name: Sync files to Hostico via FTP
+
+    # Prepare a clean deploy folder with only production files
+    - name: Prepare deploy folder
+      run: |
+        mkdir -p deploy/dist
+        mkdir -p deploy/src/core
+        mkdir -p deploy/src/scraper
+        mkdir -p deploy/src/channels
+        mkdir -p deploy/src/config
+        mkdir -p deploy/data
+        mkdir -p deploy/tmp
+
+        # Frontend build output
+        cp -r dist/* deploy/dist/
+
+        # Backend files
+        cp server.js deploy/
+        cp package.json deploy/
+        cp package-lock.json deploy/
+        cp -r src/core/* deploy/src/core/
+        cp -r src/scraper/* deploy/src/scraper/
+        cp -r src/channels/* deploy/src/channels/
+        cp -r src/config/* deploy/src/config/
+
+        # Data folder (keep structure)
+        cp -r data/* deploy/data/ 2>/dev/null || true
+
+        # Restart trigger for cPanel Passenger
+        touch deploy/tmp/restart.txt
+
+        # .env if exists (secrets should be on server already)
+        cp .env deploy/.env 2>/dev/null || true
+
+    - name: Deploy to Hostico via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         server-dir: ./
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/node_modules/**
-          .github/**
-          tasks/**
-          README.md
+        local-dir: ./deploy/

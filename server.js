@@ -1442,6 +1442,18 @@ app.post('/api/messages/send', async (req, res) => {
 // ─── Health check ────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
 
+// ─── Serve frontend (production) ─────────────────────────────────────────────
+// In production, serve the Vite-built files from dist/
+const distPath = join(__dirname, 'dist');
+if (existsSync(distPath)) {
+  app.use(express.static(distPath));
+  // SPA catch-all: any non-API route serves index.html
+  app.get('*', (req, res) => {
+    res.sendFile(join(distPath, 'index.html'));
+  });
+  console.log(`[Server] Serving frontend from ${distPath}`);
+}
+
 // ─── Global error handler ────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(`[Server] Error on ${req.method} ${req.path}:`, err);
@@ -1449,7 +1461,7 @@ app.use((err, req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   const strategies = domainStrategy.listAll();
   console.log(`\n╔══════════════════════════════════════════════╗`);
