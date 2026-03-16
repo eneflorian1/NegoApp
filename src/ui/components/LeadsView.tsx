@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Search, Filter, ExternalLink, Phone, TrendingUp, ChevronLeft, ArrowRight, X, Send, MessageSquare, Zap, BarChart3 } from 'lucide-react';
+import { Search, Filter, ExternalLink, Phone, TrendingUp, ChevronLeft, ArrowRight, X, Send, MessageSquare, Zap, BarChart3, Trash2 } from 'lucide-react';
 import { LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lead, MarketStats } from '../types';
 import { getStatusStyle, parsePrice } from '../helpers';
 
-export default function LeadsView({ leads, marketStats, selectedLeadId, setSelectedLeadId }: { leads: Lead[], marketStats: MarketStats[], selectedLeadId: string | null, setSelectedLeadId: (id: string) => void, key?: string }) {
+export default function LeadsView({ leads, marketStats, selectedLeadId, setSelectedLeadId, onDeleteLead }: { leads: Lead[], marketStats: MarketStats[], selectedLeadId: string | null, setSelectedLeadId: (id: string) => void, onDeleteLead: (id: string) => void, key?: string }) {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
   const selectedLead = leads.find(l => l.id === selectedLeadId);
   const stats = marketStats.find(s =>
@@ -72,6 +72,17 @@ export default function LeadsView({ leads, marketStats, selectedLeadId, setSelec
                     <div className="flex gap-2">
                       <button className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500"><ExternalLink className="w-3.5 h-3.5" /></button>
                       <button className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500"><MessageSquare className="w-3.5 h-3.5" /></button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('Sigur vrei să ștergi acest lead?')) {
+                            onDeleteLead(lead.id);
+                          }
+                        }}
+                        className="p-1.5 hover:bg-red-500/20 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </td>
                 </tr>

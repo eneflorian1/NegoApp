@@ -7,14 +7,36 @@ interface SettingsViewProps {
   config: Config;
   setConfig: React.Dispatch<React.SetStateAction<Config>>;
   serviceStatus?: ServiceStatus;
+  configLoaded?: boolean;
 }
 
-export default function SettingsView({ config, setConfig, serviceStatus }: SettingsViewProps) {
+export default function SettingsView({ config, setConfig, serviceStatus, configLoaded = true }: SettingsViewProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [waQR, setWaQR] = useState<string | null>(null);
   const [waConnecting, setWaConnecting] = useState(false);
   const [waError, setWaError] = useState<string | null>(null);
+  const isFirstRender = React.useRef(true);
+
+  // Auto-save config when it changes (debounced)
+  useEffect(() => {
+    if (!configLoaded) return;
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const timeout = setTimeout(() => {
+      fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      }).then(() => {
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 2000);
+      }).catch(err => console.error('Auto-save failed:', err));
+    }, 800);
+    return () => clearTimeout(timeout);
+  }, [config, configLoaded]);
 
   // Poll QR code when connecting
   useEffect(() => {
@@ -104,10 +126,29 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
               className="absolute top-0 left-0 right-0 bg-emerald-500/20 border-b border-emerald-500/30 py-3 px-6 flex items-center justify-center gap-2 z-10 backdrop-blur-md"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest">Configuration Saved Successfully</span>
+              <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest">Auto-saved</span>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ── Gemini AI ── */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <Zap className="w-5 h-5 text-amber-400" /> Gemini AI
+            <div className={`ml-auto w-2.5 h-2.5 rounded-full ${config.geminiApiKey && config.geminiApiKey.length > 5 ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
+          </h3>
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-500 uppercase font-bold">API Key</label>
+            <input
+              type="password"
+              value={config.geminiApiKey}
+              onChange={(e) => setConfig({ ...config, geminiApiKey: e.target.value })}
+              placeholder="AIzaSy..."
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors font-mono"
+            />
+            <p className="text-[10px] text-zinc-600">Google Gemini API key for AI auto-replies on WhatsApp and Email. Get one from Google AI Studio.</p>
+          </div>
+        </section>
 
         {/* ── AgentMail ── */}
         <section className="space-y-4">
@@ -125,6 +166,19 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
               className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors font-mono"
             />
             <p className="text-[10px] text-zinc-600">Used for autonomous email negotiations and follow-ups. Saved to server on Save.</p>
+            {serviceStatus?.agentmail?.error && (
+              <p className="text-[10px] text-red-400 mt-1">{serviceStatus.agentmail.error}</p>
+            )}
+          </div>
+          <div className="space-y-2 mt-4">
+            <label className="text-xs text-zinc-500 uppercase font-bold">Email Agent Instructions</label>
+            <p className="text-[10px] text-zinc-600">Instruct the AI on how to respond to emails — tone, negotiation style, language preferences. The agent will follow these instructions when composing email replies.</p>
+            <textarea
+              value={config.emailSystemPrompt}
+              onChange={(e) => setConfig({ ...config, emailSystemPrompt: e.target.value })}
+              placeholder={"Ești un agent AI expert în negociere și cumpărare de produse/servicii.\n\nOBIECTIVE:\n- Negociază prețuri mai mici cu diplomație\n- Fii politicos dar ferm în negociere\n- Propune contra-oferte rezonabile (10-25% reducere)\n- Răspunde în limba în care ești abordat\n- Menține un ton profesional dar prietenos"}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[120px] resize-y"
+            />
           </div>
         </section>
 
@@ -207,6 +261,17 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
               </button>
             </div>
           )}
+
+          <div className="space-y-2 mt-4">
+            <label className="text-xs text-zinc-500 uppercase font-bold">WhatsApp Agent Instructions</label>
+            <p className="text-[10px] text-zinc-600">Instruct the AI on how to respond to WhatsApp messages — persona, tone, behavior rules. The agent remembers the last 20 messages with each contact for context.</p>
+            <textarea
+              value={config.whatsappSystemPrompt}
+              onChange={(e) => setConfig({ ...config, whatsappSystemPrompt: e.target.value })}
+              placeholder={"Ești o persoană reală care vorbește pe WhatsApp cu o cunoștință.\n\nREGULI:\n- Răspunde cât mai natural, scurt și la obiect\n- Folosește un ton relaxat, prietenos\n- Nu menționa sub nicio formă că ești o inteligență artificială\n- Răspunde în limba în care ești abordat\n- Negociază prețuri cu diplomație și răbdare"}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[120px] resize-y"
+            />
+          </div>
         </section>
 
         {/* ── Automation ── */}
@@ -362,25 +427,12 @@ export default function SettingsView({ config, setConfig, serviceStatus }: Setti
           </div>
         </section>
 
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className={`w-full py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 ${isSaving ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
-            }`}
-        >
-          {isSaving ? (
-            <>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                className="w-5 h-5 border-2 border-zinc-600 border-t-zinc-400 rounded-full"
-              />
-              Saving...
-            </>
-          ) : (
-            'Save Configuration'
-          )}
-        </button>
+        {!configLoaded && (
+          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <p className="text-xs text-red-400">Cannot save — server unreachable. Config not loaded.</p>
+          </div>
+        )}
       </div>
     </motion.div>
   );

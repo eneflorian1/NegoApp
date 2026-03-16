@@ -1,40 +1,50 @@
 /**
  * GeminiClient — Lightweight Gemini API integration
- * 
- * Uses GEMINI_API_KEY from .env to interact with Google's Gemini API.
- * Provides context understanding for the orchestrator:
- * - Analyze listing data
- * - Understand page structure
- * - Make negotiation decisions
+ *
+ * API key is loaded dynamically from config (Settings UI).
+ * Falls back to GEMINI_API_KEY from .env if config key not set.
  */
 
 import 'dotenv/config';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
 class GeminiClient {
   constructor() {
-    if (!GEMINI_API_KEY) {
-      console.warn('[Gemini] No GEMINI_API_KEY found in .env — AI features disabled');
+    this._apiKey = process.env.GEMINI_API_KEY || null;
+    this._getConfigKey = null; // will be set by server.js
+  }
+
+  /**
+   * Set a callback to dynamically read the API key from config
+   */
+  setConfigKeyProvider(fn) {
+    this._getConfigKey = fn;
+  }
+
+  /** Get the current API key (config takes priority over .env) */
+  _getKey() {
+    if (this._getConfigKey) {
+      const configKey = this._getConfigKey();
+      if (configKey && configKey.length > 5) return configKey;
     }
+    return this._apiKey;
   }
 
   get isAvailable() {
-    return !!GEMINI_API_KEY;
+    return !!this._getKey();
   }
 
   /**
    * Send a prompt to Gemini and get a response
-   * @param {string} prompt - The instruction/question
-   * @param {object} options - { temperature, maxTokens }
-   * @returns {string} Text response from Gemini
    */
   async generate(prompt, options = {}) {
-    if (!GEMINI_API_KEY) {
-      throw new Error('Gemini API key not configured');
+    const apiKey = this._getKey();
+    if (!apiKey) {
+      throw new Error('Gemini API key not configured. Set it in Settings.');
     }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
 
     const body = {
       contents: [{ parts: [{ text: prompt }] }],
@@ -44,7 +54,7 @@ class GeminiClient {
       },
     };
 
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -61,8 +71,6 @@ class GeminiClient {
 
   /**
    * Analyze a marketplace listing and extract structured context
-   * @param {object} listingData - { title, price, description, sellerName, ... }
-   * @returns {object} Structured analysis
    */
   async analyzeListing(listingData) {
     const personalityPrompt = {
@@ -95,9 +103,6 @@ Respond ONLY with valid JSON, no markdown.`;
 
   /**
    * Analyze a page DOM to discover extraction selectors
-   * @param {string} html - Cleaned HTML of the page
-   * @param {string} domain - The domain being analyzed
-   * @returns {object} Discovered strategy
    */
   async analyzePageStructure(html, domain) {
     const prompt = `You are analyzing a marketplace website (${domain}) to discover how to extract product data.

@@ -1,16 +1,139 @@
-import React, { useState } from 'react';
-import { Send, Phone, Mail, ExternalLink, CheckCircle2, ChevronLeft, MoreVertical, AlertCircle, X, MessageSquare, Zap, Users, LineChart, Search } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Phone, Mail, ExternalLink, CheckCircle2, ChevronLeft, MoreVertical, AlertCircle, X, MessageSquare, Zap, Users, LineChart, Search, Filter, Trash2 } from 'lucide-react';
 import { LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lead, Message } from '../types';
 import { getStatusStyle, parsePrice } from '../helpers';
-import { MOCK_MESSAGES } from '../mockData';
 
 export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, onToggleBot }: { leads: Lead[], selectedLeadId: string | null, setSelectedLeadId: (id: string) => void, onToggleBot: (id: string) => void, key?: string }) {
   const [messageText, setMessageText] = useState('');
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [chartLeadId, setChartLeadId] = useState<string | null>(null);
+  const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'email'>('all');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [readTimestamps, setReadTimestamps] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('inboxReadTimestamps') || '{}');
+    } catch { return {}; }
+  });
+  const filterRef = useRef<HTMLDivElement>(null);
   const selectedLead = leads.find(l => l.id === selectedLeadId);
+
+  // Mark selected lead as read
+  useEffect(() => {
+    if (!selectedLeadId) return;
+    const now = new Date().toISOString();
+    setReadTimestamps(prev => {
+      const next = { ...prev, [selectedLeadId]: now };
+      localStorage.setItem('inboxReadTimestamps', JSON.stringify(next));
+      return next;
+    });
+  }, [selectedLeadId]);
+
+  // Compute unread counts and latest message timestamp per lead
+  const leadMeta = React.useMemo(() => {
+    const meta: Record<string, { unread: number; latestTs: string; lastSender: string }> = {};
+    for (const msg of messages) {
+      if (!meta[msg.leadId]) {
+        meta[msg.leadId] = { unread: 0, latestTs: msg.timestamp, lastSender: msg.sender };
+      }
+      if (msg.timestamp > meta[msg.leadId].latestTs) {
+        meta[msg.leadId].latestTs = msg.timestamp;
+        meta[msg.leadId].lastSender = msg.sender;
+      }
+      if (msg.sender !== 'me') {
+        const readTs = readTimestamps[msg.leadId];
+        if (!readTs || msg.timestamp > readTs) {
+          meta[msg.leadId].unread++;
+        }
+      }
+    }
+    // If bot is active and has already replied, clear unread count
+    for (const lead of leads) {
+      if (lead.isBotActive && meta[lead.id] && meta[lead.id].lastSender === 'me') {
+        meta[lead.id].unread = 0;
+      }
+    }
+    return meta;
+  }, [messages, readTimestamps, leads]);
+
+  const handleDeleteConversation = async (leadId: string) => {
+    try {
+      await fetch(`/api/conversations/${leadId}?deleteLead=true`, { method: 'DELETE' });
+      setDeleteConfirmId(null);
+      if (selectedLeadId === leadId) {
+        setSelectedLeadId('');
+        setIsMobileChatOpen(false);
+      }
+      setMessages(prev => prev.filter(m => m.leadId !== leadId));
+    } catch (err) {
+      console.error('Failed to delete conversation:', err);
+    }
+  };
+
+  // Fetch messages from API with polling
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const url = channelFilter === 'all'
+          ? '/api/messages'
+          : `/api/messages?channel=${channelFilter}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        setMessages(data);
+      } catch (err) {
+        console.error('Failed to fetch messages:', err);
+      }
+    };
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 5000);
+    return () => clearInterval(interval);
+  }, [channelFilter]);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilterDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filteredLeads = (channelFilter === 'all'
+    ? leads
+    : leads.filter(lead =>
+        messages.some(m => m.leadId === lead.id)
+      )
+  ).slice().sort((a, b) => {
+    const tsA = leadMeta[a.id]?.latestTs || a.createdAt || '';
+    const tsB = leadMeta[b.id]?.latestTs || b.createdAt || '';
+    return tsB.localeCompare(tsA);
+  });
+
+  const leadMessages = messages.filter(m => m.leadId === selectedLeadId);
+
+  const handleSend = async () => {
+    if (!messageText.trim() || !selectedLead) return;
+    try {
+      await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: selectedLead.id,
+          text: messageText,
+          channel: 'whatsapp',
+          to: selectedLead.phoneNumber,
+        }),
+      });
+      setMessageText('');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  };
   const leadForChart = leads.find(l => l.id === chartLeadId);
 
   return (
@@ -24,48 +147,135 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
       {/* Thread List */}
       <div className={`w-full lg:w-80 border-r border-zinc-800 flex flex-col bg-[#0D0D0E]/30 ${isMobileChatOpen ? 'hidden lg:flex' : 'flex'}`}>
         <div className="p-4 border-b border-zinc-800">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+            <div className="relative" ref={filterRef}>
+              <button
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                className={`p-2 rounded-lg transition-colors ${
+                  channelFilter !== 'all'
+                    ? 'bg-indigo-600/10 text-indigo-400'
+                    : 'hover:bg-zinc-800 text-zinc-400'
+                }`}
+              >
+                <Filter className="w-5 h-5" />
+              </button>
+              {showFilterDropdown && (
+                <div className="absolute right-0 top-full mt-1 w-40 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden">
+                  {([
+                    { key: 'all' as const, label: 'Toate', icon: null },
+                    { key: 'email' as const, label: 'Email', icon: <Mail className="w-4 h-4" /> },
+                    { key: 'whatsapp' as const, label: 'WhatsApp', icon: <MessageSquare className="w-4 h-4" /> },
+                  ]).map(opt => (
+                    <button
+                      key={opt.key}
+                      onClick={() => { setChannelFilter(opt.key); setShowFilterDropdown(false); }}
+                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors ${
+                        channelFilter === opt.key
+                          ? 'bg-indigo-600/10 text-indigo-400 font-medium'
+                          : 'text-zinc-300 hover:bg-zinc-800'
+                      }`}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {leads.map(lead => (
+          {filteredLeads.length === 0 && channelFilter !== 'all' && (
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+              <MessageSquare className="w-8 h-8 text-zinc-700 mb-3" />
+              <p className="text-sm text-zinc-500">Nu exista conversatii pe {channelFilter === 'whatsapp' ? 'WhatsApp' : 'Email'}</p>
+            </div>
+          )}
+          {filteredLeads.map(lead => (
             <div
               key={lead.id}
               className="relative group"
             >
-              <button
+              {/* Delete button - visible on hover */}
+              {deleteConfirmId === lead.id ? (
+                <div className="absolute right-2 top-2 z-10 flex items-center gap-1 bg-zinc-900 border border-red-500/30 rounded-lg p-1.5 shadow-xl">
+                  <span className="text-[10px] text-red-400 px-1">Ștergi?</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteConversation(lead.id); }}
+                    className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded transition-colors"
+                  >
+                    Da
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }}
+                    className="px-2 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] font-bold rounded transition-colors"
+                  >
+                    Nu
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(lead.id); }}
+                  className="absolute right-2 top-2 z-10 p-1.5 rounded-lg bg-zinc-900/80 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   setSelectedLeadId(lead.id);
                   setIsMobileChatOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedLeadId(lead.id);
+                    setIsMobileChatOpen(true);
+                  }
                 }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   onToggleBot(lead.id);
                 }}
-                className={`w-full p-4 flex flex-col gap-3 border-b border-zinc-800/50 transition-all duration-300 ${selectedLeadId === lead.id ? 'bg-indigo-600/5 border-l-2 border-l-indigo-500' : 'hover:bg-zinc-800/30'
+                className={`w-full p-4 flex flex-col gap-3 border-b border-zinc-800/50 transition-all duration-300 cursor-pointer ${selectedLeadId === lead.id ? 'bg-indigo-600/5 border-l-2 border-l-indigo-500' : 'hover:bg-zinc-800/30'
                   } ${lead.status === 'accepted' ? 'bg-emerald-500/5 border-l-2 border-l-emerald-500 ring-1 ring-emerald-500/20' : ''} ${lead.status === 'autosend' ? 'bg-red-500/5 border-l-2 border-l-red-500 ring-1 ring-red-500/20' : ''
                   }`}
               >
                 <div className="flex gap-3 w-full">
-                  <div className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-lg font-bold transition-colors ${lead.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-400' :
-                      lead.status === 'autosend' ? 'bg-red-500/20 text-red-400' :
-                        'bg-zinc-800 text-indigo-400'
-                    }`}>
-                    {lead.sellerName[0]}
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold transition-colors ${lead.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-400' :
+                        lead.status === 'autosend' ? 'bg-red-500/20 text-red-400' :
+                          'bg-zinc-800 text-indigo-400'
+                      }`}>
+                      {lead.sellerName[0]}
+                    </div>
+                    {(leadMeta[lead.id]?.unread || 0) > 0 && (
+                      <span className={`absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-500 text-[9px] font-bold text-white px-1 shadow-lg shadow-indigo-500/40 ${!lead.isBotActive ? 'animate-pulse ring-2 ring-amber-500/50' : ''}`}>
+                        {leadMeta[lead.id].unread}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 text-left overflow-hidden">
                     <div className="flex justify-between items-start">
-                      <span className={`font-bold truncate text-sm ${lead.status === 'accepted' ? 'text-emerald-400' :
+                      <span className={`font-bold truncate text-sm ${(leadMeta[lead.id]?.unread || 0) > 0 ? 'text-white' : ''} ${lead.status === 'accepted' ? 'text-emerald-400' :
                           lead.status === 'autosend' ? 'text-red-400' :
-                            'text-zinc-100'
+                            (leadMeta[lead.id]?.unread || 0) > 0 ? 'text-white' : 'text-zinc-100'
                         }`}>{lead.sellerName}</span>
-                      <span className="text-[10px] text-zinc-600 whitespace-nowrap ml-2">12:05 PM</span>
+                      <span className={`text-[10px] whitespace-nowrap ml-2 ${(leadMeta[lead.id]?.unread || 0) > 0 ? 'text-indigo-400 font-medium' : 'text-zinc-600'}`}>
+                        {leadMeta[lead.id]?.latestTs
+                          ? new Date(leadMeta[lead.id].latestTs).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+                          : ''}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
                       <p className="text-[11px] text-zinc-400 truncate flex-1">{lead.title}</p>
@@ -148,6 +358,16 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                   </p>
                 )}
 
+                {/* Manual mode + unread: urgent attention banner */}
+                {!lead.isBotActive && (leadMeta[lead.id]?.unread || 0) > 0 && (
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 animate-pulse">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                      {leadMeta[lead.id].unread} mesaj{leadMeta[lead.id].unread > 1 ? 'e' : ''} nou{leadMeta[lead.id].unread > 1 ? 'a' : ''} — Manual Mode
+                    </span>
+                  </div>
+                )}
+
                 {/* Take Over Button */}
                 {lead.isBotActive && (
                   <button
@@ -160,7 +380,7 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                     <Zap className="w-3 h-3 fill-indigo-400" /> Take Over Conversation
                   </button>
                 )}
-              </button>
+              </div>
             </div>
           ))}
         </div>
@@ -244,16 +464,30 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                   </button>
                 </motion.div>
               )}
-              {MOCK_MESSAGES.map(msg => (
+              {leadMessages.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <MessageSquare className="w-10 h-10 text-zinc-700 mb-3 opacity-30" />
+                  <p className="text-sm text-zinc-600">Niciun mesaj inca</p>
+                </div>
+              )}
+              {leadMessages.map(msg => (
                 <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] lg:max-w-[70%] p-4 rounded-2xl ${msg.sender === 'me'
                       ? 'bg-indigo-600 text-white rounded-tr-none'
                       : 'bg-zinc-800 text-zinc-200 rounded-tl-none'
                     }`}>
-                    <p className="text-sm">{msg.text}</p>
-                    <p className={`text-[10px] mt-2 ${msg.sender === 'me' ? 'text-indigo-200' : 'text-zinc-500'}`}>
-                      12:10 PM
-                    </p>
+                    {msg.channel === 'email' && msg.subject && (
+                      <p className={`text-xs font-semibold mb-1 ${msg.sender === 'me' ? 'text-indigo-100' : 'text-zinc-400'}`}>
+                        {msg.subject}
+                      </p>
+                    )}
+                    <p className="text-sm">{msg.text || (msg.channel === 'email' && msg.subject ? '' : '(mesaj gol)')}</p>
+                    <div className={`flex items-center gap-1.5 mt-2 ${msg.sender === 'me' ? 'text-indigo-200' : 'text-zinc-500'}`}>
+                      {msg.channel === 'whatsapp' ? <MessageSquare className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                      <span className="text-[10px]">
+                        {new Date(msg.timestamp).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -282,10 +516,11 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                   type="text"
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
                   placeholder="Type a message..."
                   className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
                 />
-                <button className="p-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-white transition-colors">
+                <button onClick={handleSend} className="p-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl text-white transition-colors">
                   <Send className="w-5 h-5" />
                 </button>
               </div>

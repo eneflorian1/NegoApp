@@ -1,23 +1,16 @@
-# Task: Configure .gitignore
+# Plan: GitHub to Hostico Auto-Deployment
 
-## Plan
-- [x] Research common .gitignore patterns for Vite/React/Node projects
-- [x] Identify project-specific files to ignore (data logs, session data, build artifacts)
-- [x] Create/Update `.gitignore` in the root directory
-- [x] Handle line endings (LF vs CRLF) with `.gitattributes`
-- [x] Verify the file exists and has correct content
+## Goal
+Set up continuous deployment so that pushing to the `main` branch automatically deploys the frontend and backend to Hostico (negociator.site).
 
-## Requirements
-- Ignore `node_modules/`
-- Ignore `dist/`
-- Ignore `.env`
-- Ignore WhatsApp session data (`data/.wwebjs_auth/`)
-- Ignore batch progress logs (`data/batch-progress/`)
-- Ignore temp/output files (`reveal_result.json`, `reveal_summary.txt`)
-- Ignore common OS and IDE files
-- Ensure consistent LF line endings via `.gitattributes`
+## Approach Chosen
+**GitHub Actions with FTP sync**
+It is the robust way because compiling `Vite` (`npm run build`) takes RAM, which shared Hostico plans sometimes throttle or kill. By building it on GitHub's free powerful runners, we guarantee successful builds and simply sync the ready-to-run files via FTP.
 
-## Review
-- [x] `.gitignore` created successfully
-- [x] `.gitattributes` created to fix CRLF issues
-- [x] All sensitive and temporary files listed
+## Steps
+- [x] 1. Create `.github/workflows/deploy.yml`.
+- [x] 2. The workflow will: Checkout code -> Install Node -> `npm install` -> `npm run build` -> Sync files to Hostico via FTP -> Restart Node.js backend.
+- [x] 3. Create a helper for Passenger Node.js restart (`tmp/restart.txt`).
+- [x] 4. Instruct user to add their FTP secrets in GitHub Settings.
+- [x] 5. Instruct user to ensure cPanel Node.js App is correctly pointing to `server.js`.
+

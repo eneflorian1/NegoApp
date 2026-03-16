@@ -23,6 +23,11 @@ class WhatsAppClient extends EventEmitter {
     this.qrCodeData = null;   // base64 PNG
     this.sessionInfo = null;
     this.lastError = null;
+
+    // Prevent unhandled 'error' events from crashing the process
+    this.on('error', (err) => {
+      console.error('[WhatsApp] Unhandled error:', err.message);
+    });
   }
 
   /**
@@ -31,6 +36,12 @@ class WhatsAppClient extends EventEmitter {
   async connect() {
     if (this.isConnected) return { status: 'already_connected' };
     if (this.isInitializing) return { status: 'initializing' };
+
+    // Clean up any previous failed client
+    if (this.client) {
+      try { await this.client.destroy(); } catch {}
+      this.client = null;
+    }
 
     this.isInitializing = true;
     this.lastError = null;
@@ -46,7 +57,6 @@ class WhatsAppClient extends EventEmitter {
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
-            '--single-process',
             '--disable-features=site-per-process',
           ],
         },
@@ -97,20 +107,29 @@ class WhatsAppClient extends EventEmitter {
         this.emit('disconnected', reason);
       });
 
-      this.client.on('message', (msg) => {
+      this.client.on('message', async (msg) => {
+        let contactName = null;
+        try {
+          const contact = await msg.getContact();
+          contactName = contact.pushname || contact.name || contact.shortName || null;
+        } catch {}
         this.emit('message', {
           from: msg.from,
           body: msg.body,
           timestamp: msg.timestamp,
           type: msg.type,
+          contactName,
         });
       });
 
       // Fire-and-forget: don't block the HTTP response waiting for QR/auth
-      this.client.initialize().catch((err) => {
+      this.client.initialize().catch(async (err) => {
         this.isInitializing = false;
         this.lastError = err.message;
         console.error('[WhatsApp] Initialize error:', err.message);
+        // Clean up failed client so retry is possible
+        try { await this.client.destroy(); } catch {}
+        this.client = null;
         this.emit('error', err);
       });
 
@@ -124,21 +143,24 @@ class WhatsAppClient extends EventEmitter {
   }
 
   /**
-   * Send a message to a phone number
+   * Send a message to a phone number or WhatsApp chat ID
+   * If chatIdOrPhone contains '@', it's used as-is (e.g. 12345@lid)
+   * Otherwise digits are extracted and @c.us is appended
    */
-  async sendMessage(phoneNumber, message) {
+  async sendMessage(chatIdOrPhone, message) {
     if (!this.isConnected || !this.client) {
       throw new Error('WhatsApp not connected. Please scan QR code first.');
     }
 
-    // Format: countrycode + number @ c.us
-    const chatId = phoneNumber.replace(/[^0-9]/g, '') + '@c.us';
+    const chatId = chatIdOrPhone.includes('@')
+      ? chatIdOrPhone
+      : chatIdOrPhone.replace(/[^0-9]/g, '') + '@c.us';
     const result = await this.client.sendMessage(chatId, message);
 
     return {
       status: 'sent',
       messageId: result.id?.id || `wa-${Date.now()}`,
-      to: phoneNumber,
+      to: chatIdOrPhone,
       timestamp: Date.now(),
     };
   }

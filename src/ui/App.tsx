@@ -5,7 +5,6 @@ import {
   Zap,
   Users,
   Search,
-  Plus,
   Settings,
   Menu,
   X
@@ -13,7 +12,7 @@ import {
 import { motion } from 'motion/react';
 import { AnimatePresence } from 'motion/react';
 import { Lead, OrchestratorTask, Config, MarketStats, ServiceStatus } from './types';
-import { MOCK_LEADS, MOCK_MARKET_STATS } from './mockData';
+import { MOCK_MARKET_STATS } from './mockData';
 
 import DashboardView from './components/DashboardView';
 import InboxView from './components/InboxView';
@@ -24,9 +23,9 @@ import SettingsView from './components/SettingsView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'orchestrator' | 'leads' | 'database' | 'settings'>('orchestrator');
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [marketStats] = useState<MarketStats[]>(MOCK_MARKET_STATS);
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(MOCK_LEADS[0].id);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<OrchestratorTask[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus>({
@@ -34,12 +33,45 @@ export default function App() {
     agentmail: { connected: false, error: null },
   });
 
-  const toggleBotActive = (leadId: string) => {
+  const toggleBotActive = async (leadId: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+    const updated = !lead.isBotActive;
     setLeads(prev => prev.map(l =>
-      l.id === leadId ? { ...l, isBotActive: !l.isBotActive } : l
+      l.id === leadId ? { ...l, isBotActive: updated } : l
     ));
+    try {
+      await fetch(`/api/leads/${leadId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isBotActive: updated }),
+      });
+    } catch { /* ignore */ }
   };
+
+  const deleteLead = async (leadId: string) => {
+    setLeads(prev => prev.filter(l => l.id !== leadId));
+    if (selectedLeadId === leadId) setSelectedLeadId('');
+    try {
+      await fetch(`/api/leads/${leadId}`, { method: 'DELETE' });
+    } catch { /* ignore */ }
+  };
+
+  // Fetch leads from server with polling
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const res = await fetch('/api/leads');
+        const data = await res.json();
+        setLeads(data);
+      } catch { /* ignore */ }
+    };
+    fetchLeads();
+    const interval = setInterval(fetchLeads, 5000);
+    return () => clearInterval(interval);
+  }, []);
   const [config, setConfig] = useState<Config>({
+    geminiApiKey: '',
     agentMailApiKey: '',
     whatsappConnected: true,
     autoPilotEnabled: false,
@@ -47,6 +79,8 @@ export default function App() {
     meetingAddress: 'Piata Unirii, Bucuresti',
     autosendAddress: false,
     defaultPersonality: 'diplomat',
+    whatsappSystemPrompt: '',
+    emailSystemPrompt: '',
     yoloDefaults: {
       autoNegThreshold: 10,
       modaExcludedBrands: 'Zara, H&M',
@@ -54,13 +88,18 @@ export default function App() {
     }
   });
 
+  const [configLoaded, setConfigLoaded] = useState(false);
+
   // Load config from server on mount
   useEffect(() => {
     fetch('/api/config').then(r => r.json()).then(saved => {
       if (saved && Object.keys(saved).length > 0) {
         setConfig(prev => ({ ...prev, ...saved }));
       }
-    }).catch(() => {});
+      setConfigLoaded(true);
+    }).catch(() => {
+      setConfigLoaded(false);
+    });
   }, []);
 
   // Poll service status every 5s
@@ -209,9 +248,6 @@ export default function App() {
                 </span>
               </div>
             </div>
-            <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-              <Plus className="w-5 h-5" />
-            </button>
           </div>
         </header>
 
@@ -235,10 +271,10 @@ export default function App() {
             <DatabaseView />
           </div>
           <div style={{ display: activeTab === 'leads' ? 'block' : 'none' }}>
-            <LeadsView leads={leads} marketStats={marketStats} selectedLeadId={selectedLeadId} setSelectedLeadId={setSelectedLeadId} />
+            <LeadsView leads={leads} marketStats={marketStats} selectedLeadId={selectedLeadId} setSelectedLeadId={setSelectedLeadId} onDeleteLead={deleteLead} />
           </div>
           <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
-            <SettingsView config={config} setConfig={setConfig} serviceStatus={serviceStatus} />
+            <SettingsView config={config} setConfig={setConfig} serviceStatus={serviceStatus} configLoaded={configLoaded} />
           </div>
         </div>
 

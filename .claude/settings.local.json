@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la C:/Users/Admin/Documents/GitHub/NegoApp/.env*)",
+      "Bash(node -e \"const pkg = require\\(''whatsapp-web.js''\\); console.log\\(''wwebjs version:'', pkg.version || ''unknown''\\)\")",
+      "Bash(npm ls:*)",
+      "mcp__Desktop_Commander__list_directory",
+      "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp -type f -name *database* -o -name *db* -o -name *storage*)",
+      "Bash(grep -r \"fetch.*messages\\\\|GET.*message\\\\|POST.*message\" /c/Users/Admin/Documents/GitHub/NegoApp/src --include=*.js --include=*.ts)",
+      "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp -name *.json -path */data/* -type f)",
+      "mcp__Desktop_Commander__get_file_info",
+      "Bash(C:/Users/Admin/Documents/GitHub/NegoApp/data/leads.json:*)",
+      "Bash(C:/Users/Admin/Documents/GitHub/NegoApp/data/messages.json:*)",
+      "mcp__Context7__resolve-library-id",
+      "mcp__Context7__get-library-docs",
+      "Bash(npx vite:*)"
+    ]
+  }
+}

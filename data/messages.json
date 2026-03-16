@@ -1,0 +1,80 @@
+[
+  {
+    "id": "wa-in-1773653215631-ni3eag",
+    "leadId": null,
+    "sender": "seller",
+    "text": "g",
+    "timestamp": "2026-03-16T09:26:55.000Z",
+    "channel": "whatsapp",
+    "from": "170807040991459@lid"
+  },
+  {
+    "id": "wa-in-1773655538714-9gpzzv",
+    "leadId": "lead-1773655538712-k57evt",
+    "sender": "seller",
+    "text": "hey",
+    "timestamp": "2026-03-16T10:05:38.000Z",
+    "channel": "whatsapp",
+    "from": "170807040991459@lid"
+  },
+  {
+    "id": "wa-in-1773655605345-trp3pa",
+    "leadId": "lead-1773655538712-k57evt",
+    "sender": "seller",
+    "text": "hello",
+    "timestamp": "2026-03-16T10:06:45.000Z",
+    "channel": "whatsapp",
+    "from": "170807040991459@lid"
+  },
+  {
+    "id": "wa-out-1773655607654-fo7xj5",
+    "leadId": "lead-1773655538712-k57evt",
+    "sender": "me",
+    "text": "Salut!",
+    "timestamp": "2026-03-16T10:06:47.654Z",
+    "channel": "whatsapp",
+    "to": "170807040991459@lid"
+  },
+  {
+    "id": "mail-in-1773655746480-tp6g0p",
+    "leadId": "lead-1773655746478-evp5if",
+    "sender": "seller",
+    "text": "primesti emailul?",
+    "timestamp": "2026-03-16T09:55:44.000Z",
+    "channel": "email",
+    "from": "eneflorian@mail.com",
+    "subject": "este de vanzare",
+    "emailMessageId": "<trinity-35618449-013a-42f2-b6ac-c8a441fa9b7f-1773654944314@3c-app-mailcom-lxa10>"
+  },
+  {
+    "id": "mail-in-1773655746510-569cs9",
+    "leadId": "lead-1773655746478-evp5if",
+    "sender": "seller",
+    "text": "hey",
+    "timestamp": "2026-03-16T09:42:50.000Z",
+    "channel": "email",
+    "from": "eneflorian@mail.com",
+    "subject": "helllo",
+    "emailMessageId": "<trinity-fa93e3b2-320e-4afb-bb3a-21b47ab94f7d-1773654170254@3c-app-mailcom-lxa10>"
+  },
+  {
+    "id": "mail-in-1773655746840-iqjp6q",
+    "leadId": "lead-1773655746478-evp5if",
+    "sender": "seller",
+    "text": "hey",
+    "timestamp": "2026-03-16T09:32:22.000Z",
+    "channel": "email",
+    "from": "eneflorian@mail.com",
+    "subject": "hey",
+    "emailMessageId": "<trinity-5f0e64ee-1070-42dc-a261-1ad619fc950a-1773653542182@3c-app-mailcom-lxa10>"
+  },
+  {
+    "id": "wa-out-1773656719312-fw41z2",
+    "leadId": "lead-1773656718235-s5hko7",
+    "sender": "me",
+    "text": "Salut Florin, am văzut anunțul tău și sunt interesat de serviciile de creare aplicații/site-uri. Ai putea să-mi spui mai multe despre costuri și dacă există vreo posibilitate de negociere? Mulțumesc!",
+    "timestamp": "2026-03-16T10:25:19.312Z",
+    "channel": "whatsapp",
+    "to": "40726572727@c.us"
+  }
+]

@@ -121,24 +121,43 @@
     "updatedAt": "2026-03-15T20:14:48.756Z"
   },
   {
-    "id": "mission-1773606652917-xk7k1v",
-    "mode": "category",
+    "id": "mission-1773656701929-2ehrf3",
+    "mode": "single",
     "platform": "olx",
-    "url": "https://www.olx.ro/imobiliare/apartamente-garsoniere-de-vanzare/4-camere/?currency=EUR",
+    "url": "https://www.olx.ro/d/oferta/realizez-aplicatii-siteuri-etc-IDk3DNm.html?bs=olx_pro_listing",
     "useProxy": false,
-    "status": "error",
+    "status": "completed",
     "domain": "olx.ro",
     "strategy": "olx.ro",
     "results": [
       {
-        "success": false,
-        "error": "Cannot read properties of undefined (reading 'length')"
+        "url": "https://www.olx.ro/d/oferta/realizez-aplicatii-siteuri-etc-IDk3DNm.html?bs=olx_pro_listing",
+        "phone": "0726572727",
+        "listing": {
+          "title": "realizez aplicatii , siteuri etc",
+          "price": null,
+          "description": "Descrierepot sa realizez si automatizari software pentru orice flux. contact whatsapp pentru orice cerere .",
+          "sellerName": "Florin",
+          "location": null,
+          "memberSince": "Pe OLX din august 2014",
+          "lastSeen": "Activ azi la 12:10",
+          "url": "https://www.olx.ro/d/oferta/realizez-aplicatii-siteuri-etc-IDk3DNm.html?bs=olx_pro_listing"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773656701935,
+          "navigated": 1773656710354,
+          "done": 1773656717144,
+          "totalMs": 15209
+        }
       }
     ],
-    "leadsFound": 0,
-    "leadsContacted": 0,
-    "progress": 0,
-    "createdAt": "2026-03-15T20:30:52.917Z",
-    "updatedAt": "2026-03-15T20:36:44.354Z"
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T10:25:01.929Z",
+    "updatedAt": "2026-03-16T10:25:18.233Z"
   }
 ]

@@ -18,6 +18,7 @@ export interface Lead {
   aiSuggestion?: string;
   lastMessage?: string;
   isBotActive?: boolean;
+  channel?: 'whatsapp' | 'email';
 }
 
 export interface Message {
@@ -27,6 +28,9 @@ export interface Message {
   text: string;
   timestamp: string;
   channel: 'whatsapp' | 'email';
+  subject?: string;
+  from?: string;
+  to?: string;
 }
 
 export interface OrchestratorTask {
@@ -57,6 +61,7 @@ export interface MarketStats {
 }
 
 export interface Config {
+  geminiApiKey: string;
   agentMailApiKey: string;
   whatsappConnected: boolean;
   autoPilotEnabled: boolean;
@@ -64,6 +69,8 @@ export interface Config {
   meetingAddress: string;
   autosendAddress: boolean;
   defaultPersonality: 'shark' | 'diplomat' | 'ghost';
+  whatsappSystemPrompt: string;
+  emailSystemPrompt: string;
   yoloDefaults: {
     autoNegThreshold: number;
     modaExcludedBrands: string;

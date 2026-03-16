@@ -1,8 +1,8 @@
 {
   "domain": "olx.ro",
   "version": 1,
-  "lastUpdated": "2026-03-15",
-  "successRate": 0.9858785231759499,
+  "lastUpdated": "2026-03-16",
+  "successRate": 0.9885616037725194,
   "status": "active",
   "phoneReveal": {
     "approach": "click_button",

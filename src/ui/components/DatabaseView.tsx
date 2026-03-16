@@ -190,13 +190,12 @@ export default function DatabaseView() {
 // Mission Card Component
 // ────────────────────────────────────────────────────────────────
 
-function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop, key }: { 
-  mission: Mission; 
-  isExpanded: boolean; 
+function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop }: {
+  mission: Mission;
+  isExpanded: boolean;
   onToggle: () => void;
   onDelete: () => void;
   onStop: () => void;
-  key?: any;
 }) {
   const isCategory = mission.mode === 'category';
   const results = mission.mode === 'single' ? mission.results : (mission.reveals || []);
