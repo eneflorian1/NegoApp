@@ -39,6 +39,7 @@ pnpm-debug.log*
 *.sw?
 
 # Project specific ignores
+.wwebjs_cache/
 data/.wwebjs_auth/
 data/batch-progress/
 reveal_result.json

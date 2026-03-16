@@ -1,16 +1,18 @@
-# Plan: GitHub to Hostico Auto-Deployment
+# VPS & GitHub Actions Configuration Plan
 
-## Goal
-Set up continuous deployment so that pushing to the `main` branch automatically deploys the frontend and backend to Hostico (negociator.site).
+## 1. Initial VPS Inspection
+- [x] Connect to VPS (`administrator@155.117.45.192`) and test permissions.
+- [x] Inspect existing Nginx configuration for `usa-app` to ensure no conflict.
 
-## Approach Chosen
-**GitHub Actions with FTP sync**
-It is the robust way because compiling `Vite` (`npm run build`) takes RAM, which shared Hostico plans sometimes throttle or kill. By building it on GitHub's free powerful runners, we guarantee successful builds and simply sync the ready-to-run files via FTP.
+## 2. Nginx Configuration for negociator.site
+- [x] Create directory structure `/var/www/negociator.site/html`.
+- [x] Create Nginx server block (`/etc/nginx/sites-available/negociator.site`).
+- [x] Enable site and test Nginx configuration (`nginx -t`).
+- [x] Reload Nginx to apply changes.
 
-## Steps
-- [x] 1. Create `.github/workflows/deploy.yml`.
-- [x] 2. The workflow will: Checkout code -> Install Node -> `npm install` -> `npm run build` -> Sync files to Hostico via FTP -> Restart Node.js backend.
-- [x] 3. Create a helper for Passenger Node.js restart (`tmp/restart.txt`).
-- [x] 4. Instruct user to add their FTP secrets in GitHub Settings.
-- [x] 5. Instruct user to ensure cPanel Node.js App is correctly pointing to `server.js`.
-
+## 3. GitHub Actions Setup
+- [x] Create SSH key pair on VPS for GitHub Actions deploy.
+- [x] Add Deploy Key to VPS `authorized_keys`.
+- [x] Provide instructions to user for adding GitHub Secrets (`SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`).
+- [x] Create `.github/workflows/deploy.yml` locally for robust automated deployment.
+- [ ] Verify deployment via GitHub push.

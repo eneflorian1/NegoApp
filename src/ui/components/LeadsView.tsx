@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, ExternalLink, Phone, TrendingUp, ChevronLeft, ArrowRight, X, Send, MessageSquare, Zap, BarChart3, Trash2 } from 'lucide-react';
+import { Search, Filter, ExternalLink, Phone, TrendingUp, ChevronLeft, ArrowRight, X, Send, MessageSquare, Zap, BarChart3, Trash2, PlayCircle } from 'lucide-react';
 import { LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lead, MarketStats } from '../types';
@@ -7,12 +7,12 @@ import { getStatusStyle, parsePrice } from '../helpers';
 
 export default function LeadsView({ leads, marketStats, selectedLeadId, setSelectedLeadId, onDeleteLead }: { leads: Lead[], marketStats: MarketStats[], selectedLeadId: string | null, setSelectedLeadId: (id: string) => void, onDeleteLead: (id: string) => void, key?: string }) {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
+  const [startingConvoId, setStartingConvoId] = useState<string | null>(null);
   const selectedLead = leads.find(l => l.id === selectedLeadId);
   const stats = marketStats.find(s =>
     selectedLead?.title.toLowerCase().includes(s.query.toLowerCase()) ||
     s.query.toLowerCase().includes(selectedLead?.title.toLowerCase() || '')
   ) || marketStats[0];
-
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 h-full">
       <motion.div
@@ -71,7 +71,26 @@ export default function LeadsView({ leads, marketStats, selectedLeadId, setSelec
                   <td className="px-4 lg:px-6 py-4">
                     <div className="flex gap-2">
                       <button className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500"><ExternalLink className="w-3.5 h-3.5" /></button>
-                      <button className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500"><MessageSquare className="w-3.5 h-3.5" /></button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (lead.status === 'new' && lead.phoneNumber) {
+                            setStartingConvoId(lead.id);
+                            fetch(`/api/leads/${lead.id}/start-conversation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                              .then(r => r.json())
+                              .then(data => {
+                                if (data.error) alert('Eroare: ' + data.error);
+                              })
+                              .catch(err => alert('Eroare: ' + err.message))
+                              .finally(() => setStartingConvoId(null));
+                          }
+                        }}
+                        disabled={startingConvoId === lead.id}
+                        className={`p-1.5 rounded-lg transition-colors ${lead.status === 'new' && lead.phoneNumber ? 'hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300' : 'hover:bg-zinc-800 text-zinc-500'} disabled:opacity-50`}
+                        title={lead.status === 'new' ? 'Pornește Conversația' : 'Conversație'}
+                      >
+                        {startingConvoId === lead.id ? <Send className="w-3.5 h-3.5 animate-pulse" /> : <PlayCircle className="w-3.5 h-3.5" />}
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

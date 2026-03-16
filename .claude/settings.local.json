@@ -13,7 +13,9 @@
       "Bash(C:/Users/Admin/Documents/GitHub/NegoApp/data/messages.json:*)",
       "mcp__Context7__resolve-library-id",
       "mcp__Context7__get-library-docs",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -c server.js)"
     ]
   }
 }

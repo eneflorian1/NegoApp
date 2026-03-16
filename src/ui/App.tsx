@@ -7,7 +7,8 @@ import {
   Search,
   Settings,
   Menu,
-  X
+  X,
+  ShoppingBag
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AnimatePresence } from 'motion/react';
@@ -20,9 +21,10 @@ import OrchestratorView from './components/OrchestratorView';
 import DatabaseView from './components/DatabaseView';
 import LeadsView from './components/LeadsView';
 import SettingsView from './components/SettingsView';
+import OffersView from './components/OffersView';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'orchestrator' | 'leads' | 'database' | 'settings'>('orchestrator');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'orchestrator' | 'leads' | 'database' | 'offers' | 'settings'>('orchestrator');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [marketStats] = useState<MarketStats[]>(MOCK_MARKET_STATS);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -119,6 +121,7 @@ export default function App() {
   const navItems = [
     { id: 'orchestrator', label: 'Orchestrator', icon: <Zap className="w-5 h-5" /> },
     { id: 'inbox', label: 'Inbox', icon: <MessageSquare className="w-5 h-5" /> },
+    { id: 'offers', label: 'Oferte', icon: <ShoppingBag className="w-5 h-5" /> },
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'database', label: 'Database', icon: <Search className="w-5 h-5" /> },
     { id: 'leads', label: 'Leads', icon: <Users className="w-5 h-5" /> },
@@ -269,6 +272,9 @@ export default function App() {
           </div>
           <div style={{ display: activeTab === 'database' ? 'block' : 'none' }}>
             <DatabaseView />
+          </div>
+          <div style={{ display: activeTab === 'offers' ? 'block' : 'none' }}>
+            <OffersView leads={leads} />
           </div>
           <div style={{ display: activeTab === 'leads' ? 'block' : 'none' }}>
             <LeadsView leads={leads} marketStats={marketStats} selectedLeadId={selectedLeadId} setSelectedLeadId={setSelectedLeadId} onDeleteLead={deleteLead} />

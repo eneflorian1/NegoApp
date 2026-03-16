@@ -63,6 +63,7 @@ class AgentOrchestrator {
       maxReveals = 5,
       batchOptions = {},
       personality = 'diplomat',
+      onPhoneRevealed = null,
     } = params;
 
     // Determine domain from URL
@@ -176,20 +177,37 @@ class AgentOrchestrator {
         this._emit('mission:updated', mission);
       });
 
+      // Forward successful reveals instantly
+      batchProcessor.on('batch:item_success', async (data) => {
+        if (onPhoneRevealed) {
+          try {
+            await onPhoneRevealed(data.item);
+          } catch (err) {
+            console.error(`[Orchestrator] Error in onPhoneRevealed callback: ${err.message}`);
+          }
+        }
+      });
+
       const batchResult = await batchProcessor.process(toReveal, domain);
 
-      mission.reveals = batchResult.results;
-      mission.phones = batchResult.phones;
+      // BatchProcessor doesn't return a .phones root array, it returns .completed objects
+      const phones = batchResult.completed.map(r => r.phone).filter(Boolean);
+      const successCount = batchResult.completed.length;
+      const totalCount = successCount + batchResult.failed.length;
+      const successRate = totalCount > 0 ? Math.round((successCount / totalCount) * 100) : 0;
+
+      mission.reveals = batchResult.completed;
+      mission.phones = phones;
       mission.phases.revealing = {
         status: 'done',
-        total: batchResult.total,
-        success: batchResult.success,
-        failed: batchResult.failed,
-        successRate: batchResult.successRate,
+        total: totalCount,
+        success: successCount,
+        failed: batchResult.failed.length,
+        successRate: successRate,
       };
 
       this._step(mission, 'revealing',
-        `Reveal complete: ${batchResult.success}/${batchResult.total} successful, ${batchResult.phones.length} phones found`
+        `Reveal complete: ${successCount}/${totalCount} successful, ${phones.length} phones found`
       );
 
       // ─── PHASE 4: Results ──────────────────────────────────────────────

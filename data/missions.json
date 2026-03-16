@@ -159,5 +159,1412 @@
     "progress": 100,
     "createdAt": "2026-03-16T10:25:01.929Z",
     "updatedAt": "2026-03-16T10:25:18.233Z"
+  },
+  {
+    "id": "mission-1773662128537-2atis3",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/proprietar-vand-studiou-48-m2-avantgarden-faza-4-IDkdKLC.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/proprietar-vand-studiou-48-m2-avantgarden-faza-4-IDkdKLC.html?search_reason=search%7Corganic",
+        "phone": "0771426028",
+        "listing": {
+          "title": "Proprietar vând studiou 48 m2 – Avantgarden Faza 4",
+          "price": "127 000 €",
+          "description": "DescriereStudiou modern– Bartolomeu, Brașov\n\nSe vinde Studiou luminos  și complet utilat, situat la etajul 3 al unui bloc modern cu 6 niveluri. Suprafața totală de 53,6 m² - 48 m2 utili m² . Este optim compartimentat, oferind confort și funcționalitate, ideal atât pentru locuit, cât și pentru investiție.\n\nAvantaje principale:\n- complet mobilat și utilat, gata de mutat\n- Loc de parcare\n- Boxa la subsol\n- Etaj intermediar 3/6, bloc modern\n- Masina de spalat rufe \n- Masina de spălat vesela\n- Centrala proprie\n\nStr. Lebedei Nr. 27 Bl. B87",
+          "sellerName": "Ion",
+          "location": null,
+          "memberSince": "Pe OLX din noiembrie 2019",
+          "lastSeen": "Activ pe 05 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/proprietar-vand-studiou-48-m2-avantgarden-faza-4-IDkdKLC.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773662128541,
+          "navigated": 1773662134218,
+          "done": 1773662144624,
+          "totalMs": 16083
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T11:55:28.537Z",
+    "updatedAt": "2026-03-16T11:55:45.475Z"
+  },
+  {
+    "id": "mission-1773662142487-imwdjh",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/proprietar-vand-apartament-2-camere-IDkbjeY.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/proprietar-vand-apartament-2-camere-IDkbjeY.html?search_reason=search%7Corganic",
+        "phone": "0730535359",
+        "listing": {
+          "title": "Proprietar vand apartament 2 camere",
+          "price": "80 000 €Prețul e negociabil",
+          "description": "DescriereProprietar vand apartament 2 camere semidecomandat, balcon inchis, mobilat si utilat cu frigider si cuptor incorporat, TV, centrala termica, aer conditionat si masina de spalat haine. Apartamentul a fost complet renovat si se vinde cu tot ce se vede in poze.\n\nApartamentul se afla pe Bld. I, Dragalina, bloc anvelopat recent",
+          "sellerName": "George",
+          "location": null,
+          "memberSince": "Pe OLX din octombrie 2014",
+          "lastSeen": "Activ pe 17 februarie 2026",
+          "url": "https://www.olx.ro/d/oferta/proprietar-vand-apartament-2-camere-IDkbjeY.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773662142489,
+          "navigated": 1773662152042,
+          "done": 1773662160354,
+          "totalMs": 17865
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T11:55:42.487Z",
+    "updatedAt": "2026-03-16T11:56:01.409Z"
+  },
+  {
+    "id": "mission-1773663667231-gid9d3",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/garsoniera-abrud-parter-IDjQ4Xm.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/garsoniera-abrud-parter-IDjQ4Xm.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Garsoniera Abrud parter",
+          "price": "17 000 €",
+          "description": "DescriereVand garsoniera in Abrud de 34 metri patrati,la parter.Are si magazie pentru lemne in scara.Este situata exact langa gradinita de langa parc.",
+          "sellerName": "chira adrian",
+          "location": null,
+          "memberSince": "Pe OLX din august 2012",
+          "lastSeen": "Activ azi la 11:01",
+          "url": "https://www.olx.ro/d/oferta/garsoniera-abrud-parter-IDjQ4Xm.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773663667236,
+          "navigated": 1773663677823,
+          "done": 1773663692011,
+          "totalMs": 24775
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:21:07.231Z",
+    "updatedAt": "2026-03-16T12:21:32.890Z"
+  },
+  {
+    "id": "mission-1773663716647-jsyudx",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/samsung-s20-plus-black-deluxgsm-IDkl1Sm.html?isPreviewActive=0&search_reason=search%7Cpromoted&sliderIndex=0",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/samsung-s20-plus-black-deluxgsm-IDkl1Sm.html?isPreviewActive=0&search_reason=search%7Cpromoted&sliderIndex=0",
+        "phone": "0756930301",
+        "listing": {
+          "title": "Samsung S20+ Plus / Black / DeluxGSM",
+          "price": "400 lei",
+          "description": "DescriereDeluxGSM, magazin dedicat gadgeturilor în trend, VÂNZĂRI/ACHIZIȚII/SCHIMBURI, vă oferă spre vânzare telefon în stare foarte bună la cutie cu accesorii fără nici o problemă de funcționare, produsul fiind testat și verificat amănunțit înainte de comercializare! \n\nLiber în orice rețea. Dual SIM. \n\nCuloare neagră. Se vinde la acest preț deoarece are pe display o dungă mov.\n\nStocare internă 128 GB. Varianta 8 GB RAM.\n\nProdusul beneficiază de garanție 12 luni, documente de achiziție, factură fiscală persoană fizică sau juridică. \n\nSe probează în momentul vânzării fără nici o reținere.\n\nSunt acceptate UNELE schimburi cu telefoane.\n\nOferim posibilitate de achiziționare prin rate fixe de la distanță sau în magazin. \n\nRatele se acordă DOAR prin credit bancar(Tbi Bank sau BT Direct)!\n\nPrețul final este cel afișat. \n\nTrimitem în țară cu livrare și verificare prin FAN Courier. \n\nRugăm și oferim seriozitate pentru serviciile prestate.\n\nRemarcăm în stoc o vastă gamă de modele precum:\n\n-Iphone X / Xs / Xs Max / 11 / Pro / Max / 12 / Mini / Pro / Max / 13 / Pro / Max / 14 / Plus / Pro / Max / 15 / Pro / Max / 16 / Plus / Pro / Max;\n\n-Samsung S20 / Plus / Ultra / S21 / FE / S22 / S23 / S24 / S25 / Plus / Ultra / A25 / A34 / A35 / A54 / A55 / A72, precum și multe alte modele.\n\nProgram de funcționare cu publicul:\n\nLuni - vineri: 10:00-18:00.\nSâmbăta: 10:00-15:00.\nDuminică: închis.\n\nVă așteptăm să vizitați cu mare plăcere magazinul nostru fiind situat în: \n\n-Timișoara, zona spitalului județean, bulevardul Liviu Rebreanu numărul 142, intersecția Rebreanu cu Martirilor(Girocului).\n\nLocație:\n\nhttps://maps.app.goo.gl/UyQeL3xSSQ3CrxpF7.",
+          "sellerName": "Delux Area GSM",
+          "location": null,
+          "memberSince": "Pe OLX din aprilie 2021",
+          "lastSeen": "Activ azi la 00:54",
+          "url": "https://www.olx.ro/d/oferta/samsung-s20-plus-black-deluxgsm-IDkl1Sm.html?isPreviewActive=0&search_reason=search%7Cpromoted&sliderIndex=0"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773663716650,
+          "navigated": 1773663725288,
+          "done": 1773663732299,
+          "totalMs": 15649
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:21:56.647Z",
+    "updatedAt": "2026-03-16T12:22:13.361Z"
+  },
+  {
+    "id": "mission-1773663958593-o2j0oz",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/carcasa-lian-li-o11-vision-compact-mid-tower-tempered-glass-negru-IDjuW4P.html?bs=olx_pro_listing",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/carcasa-lian-li-o11-vision-compact-mid-tower-tempered-glass-negru-IDjuW4P.html?bs=olx_pro_listing",
+        "phone": null,
+        "listing": {
+          "title": "Carcasa Lian Li O11 Vision Compact Mid-Tower, Tempered Glass, Negru",
+          "price": "500 lei",
+          "description": "DescriereCarcasa noua nefolosita . Garanție prezenta.",
+          "sellerName": "Florin",
+          "location": null,
+          "memberSince": "Pe OLX din august 2014",
+          "lastSeen": "Activ azi la 12:10",
+          "url": "https://www.olx.ro/d/oferta/carcasa-lian-li-o11-vision-compact-mid-tower-tempered-glass-negru-IDjuW4P.html?bs=olx_pro_listing"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773663958598,
+          "navigated": 1773663963818,
+          "done": 1773663976731,
+          "totalMs": 18133
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:25:58.594Z",
+    "updatedAt": "2026-03-16T12:26:17.446Z"
+  },
+  {
+    "id": "mission-1773665115287-kb3iph",
+    "mode": "single",
+    "platform": "newyork.craigslist.org",
+    "url": "https://newyork.craigslist.org/wch/jwl/d/elmira-1970s-necklace-bracelet-earrings/7905775053.html",
+    "useProxy": false,
+    "status": "error",
+    "domain": "newyork.craigslist.org",
+    "strategy": "newyork.craigslist.org",
+    "results": [
+      {
+        "success": false,
+        "error": "Failed to discover strategy for newyork.craigslist.org after 3 attempts. Last error: net::ERR_TUNNEL_CONNECTION_FAILED at https://newyork.craigslist.org/wch/jwl/d/elmira-1970s-necklace-bracelet-earrings/7905775053.html",
+        "url": "https://newyork.craigslist.org/wch/jwl/d/elmira-1970s-necklace-bracelet-earrings/7905775053.html"
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T12:45:15.287Z",
+    "updatedAt": "2026-03-16T12:45:19.624Z"
+  },
+  {
+    "id": "mission-1773665394468-88funf",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Iphone 12 128GB BLACK | Stare foarte buna | Liber icloud",
+          "price": "950 lei",
+          "description": "DescriereVand iPhone 12 128GB BLACK,in stare foarte buna ,perfect funcțional. Telefonul a fost folosit cu grijă.\n\nBaterie: 82% - funcționează bine pentru utilizare zilnică\n128GB spațiu - suficient pentru aplicații ,poze și video\nAspect - bine întretinut dar cu câteva zgârieturi minore care nu se văd cu ochiul liber \nFace ID/camera/touch - toate funcționează perfect \niCloud liber,liber de rețea!!\n \nTelefonul merge rapid și fără probleme,ideal pentru utilizare zilnică\n\nSe poate testa înainte de cumpărare \nTrimit și prin curier\n\nPreț ușor negociabil\nPrimul venit, primul servit",
+          "sellerName": "Mathias",
+          "location": null,
+          "memberSince": "Pe OLX din septembrie 2025",
+          "lastSeen": "Activ azi la 04:52",
+          "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665394470,
+          "navigated": 1773665399818,
+          "done": 1773665411459,
+          "totalMs": 16989
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:49:54.468Z",
+    "updatedAt": "2026-03-16T12:50:11.987Z"
+  },
+  {
+    "id": "mission-1773665404346-sr5c10",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "iPhone 11 Pro cu 88% baterie",
+          "price": "900 lei",
+          "description": "DescriereiPhone 11 Pro de 64Gb.\nTelefonul arată bine, cu puncte fine de la husa pe ra și funcționează foarte bine, cu iOS la zi.\nBaterie 88% capacitate.\nSe vinde cu husă nouă MagSafe si cablu date original.\nNu se acceptă schimburi\nPreț fix 900 lei",
+          "sellerName": "marcela5ionache",
+          "location": null,
+          "memberSince": "Pe OLX din februarie 2026",
+          "lastSeen": "Activ azi la 07:36",
+          "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665404348,
+          "navigated": 1773665410000,
+          "done": 1773665422018,
+          "totalMs": 17670
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:50:04.346Z",
+    "updatedAt": "2026-03-16T12:50:22.658Z"
+  },
+  {
+    "id": "mission-1773665409201-25qcbu",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-13-2022-iunie-128-gb-IDjXO9I.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-13-2022-iunie-128-gb-IDjXO9I.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Iphone 13 - 2022 iunie - 128 GB",
+          "price": "950 lei",
+          "description": "DescriereVand iphone 13 - albastru , cumparat in iunie 2022 \nEcranul si camera fata nu prezinta niciun defect.\nTelefonul prezinta cateva zgarieturi pe margini \nRecomand o mica curatare la mufa, am facut una acum 3 luni. \nFolia de sticla a camerei wide este sparta, dar nu afecteaza la poze.\nSanatatea bateriei este de 78%. \nFace id-ul nu functioneaza. \nSe poate cumpara pentru uz normal sau pentru piese. \nVine cu cutia originala si daca se doreste si cu 2 huse.\nTelefonul este updatat la ios 26, ultima versiune aparuta.",
+          "sellerName": "Paul",
+          "location": null,
+          "memberSince": "Pe OLX din mai 2014",
+          "lastSeen": "Activ pe 11 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/iphone-13-2022-iunie-128-gb-IDjXO9I.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "Timed out after waiting 30000ms",
+        "timing": {
+          "start": 1773665409203,
+          "navigated": 1773665416941,
+          "done": 1773665495201,
+          "totalMs": 85998
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:50:09.201Z",
+    "updatedAt": "2026-03-16T12:51:35.543Z"
+  },
+  {
+    "id": "mission-1773665414811-6gjs5r",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/modul-apple-carplay-android-auto-bmw-seria-1-2-3-4-5-6-7-x3-x4-x5-x6-IDh3Yse.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/modul-apple-carplay-android-auto-bmw-seria-1-2-3-4-5-6-7-x3-x4-x5-x6-IDh3Yse.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Modul Apple CarPlay Android Auto BMW Seria 1 2 3 4 5 6 7 X3 X4 X5 X6",
+          "price": "999 lei",
+          "description": "DescriereModul BMW Wireless Apple CarPlay & Android Auto CIC NBT System\n\nCaractreristici produs:\n\n• Compatibil cu Apple CarPlay wireless, conectat prin Bluetooth, transfer de date prin WiFi\n• Noua funcție AirPlay permite transferul prin Wi-Fi pentru redarea de filme, navigare și muzică folosind iPhone\n• Funcția AirPlay este o tehnologie Apple care permite oglindirea ecranului iPhone prin Wi-Fi permițând transmiterea de conținut video ( ex. Youtube, Netflix, Disnay+ ) direct pe ecranul mașinii tale.\n• Pentru a utiliza CarPlay cu fir, dezactivați mai întâi WiFi-ul și conectați-vă printr-un cablu Lightning (oferind o conexiune cu fir, menținând telefonul încărcat simultan).\n• Acceptă Android Auto și Android Mirroring pentru telefoanele Android.\n• Sunt disponibile aplicații de navigare GPS precum Google Maps, Waze și Apple Maps, care oferă informații despre trafic în timp real.\n• Aplicațiile muzicale precum Spotify, Apple Music, Amazon etc. transmit audio prin intermediul suportului Bluetooth din fabrică.\n• Bucurați-vă de videoclipurile și muzica preferate\n• Control vocal activat prin rostirea cuvântului „Hei Siri…”\n• Acceptă intrare cameră frontală/spate aftermarket (sunt acceptate linii de ghidare dinamice).\n• Redați muzică și videoclipuri prin intermediul unei unități flash USB conectând-o la portul USB al kitului CarPlay.\n• EQ reglabil pentru cea mai bună calitate audio. Alegeți liber stilul audio preferat (Pop, Rock, Soft, Standard etc.).\n• Control complet prin butoane OEM.\n• Intrare HDMI disponibilă, permițând conectarea cu un dispozitiv HDMI pentru video de înaltă definiție.\n\nModele compatibile: \n\nBMW Seria 1 F20/F21  (2010–2018), \n\nBMW Seria 2 Active Tourer F45 (2013–2018)\nBMW Seria 2 Cabrio F23  (2014–2018)\nBMW Seria 2 Coupe F22 (2012–2018)\nBMW Seria 2 Grand Tourer F46 (2014–2018)\nBMW Seria 2 M2 Coupe F87 (2014–2018)\n\nBMW Seria 3 F30/F31  (2011–2018)\nBMW Seria 3 Gran Turismo F34  (2012–2018)\nBMW Seria M3 F80  (2012–2018)\n\nBMW Seria 4 F32/F33  (2013–2017)\nBMW Seria 4 Gran Coupé F36 (2013–2018)\nBMW M4 Coupé F82  (2013–2018)\nBMW M4 Cabrio F83  (2013–2018)\n\nBMW Seria 5 F10/F11  (2010–2016)\nBMW Seria 5 Gran Turismo F07  (2010–2016)\nBMW Seria 5 G30/G31  (2017–2020)\n\nBMW Seria 6 F12/F13 (2011–2018)\nBMW Seria 6 Gran Coupé F06 (2011–2018)\n\nBMW Seria 7 F01, F02  (2010–2015)\n\nBMW X1  E84 (2012–2015)\nBMW X1  F48 (2015–2018)\n\nBMW X3 F25 (2010–2017)\nBMW X3 G01 (2016–2018)\n\nBMW X4 F26 (2014–2018)\n\nBMW X5 F15 (2012–2018)\nBMW X5 F16 (2013–2018)\n\nBMW Z4 Roadster E89 (2008–2016)\n\nFor Mini: Clubman F54, F55, F56, Convertible F57, Countryman F60/R60, Paceman R60, Paceman R61;\nFor BMW I3 Series: I01  (2013–2018);\nFor BMW I3 series: I3 (I01)\n\nFor BMW I8 series: (2014-2019)\n\nPreț începând de la 999 lei în funcție de sistemul infotainment de pe mașină.\n\nPretul afisat reprzinta produsul in sine la care se va adauga tariful de montaj.\n\nAsigur montaj profesional contra cost cât și factură fiscală.",
+          "sellerName": "Dorin",
+          "location": null,
+          "memberSince": "Pe OLX din septembrie 2016",
+          "lastSeen": "Activ pe 10 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/modul-apple-carplay-android-auto-bmw-seria-1-2-3-4-5-6-7-x3-x4-x5-x6-IDh3Yse.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665414813,
+          "navigated": 1773665419885,
+          "done": 1773665427608,
+          "totalMs": 12795
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:50:14.811Z",
+    "updatedAt": "2026-03-16T12:50:28.259Z"
+  },
+  {
+    "id": "mission-1773665535323-5y6f2r",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/modul-apple-carplay-android-auto-bmw-seria-1-2-3-4-5-6-7-x3-x4-x5-x6-IDh3Yse.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/modul-apple-carplay-android-auto-bmw-seria-1-2-3-4-5-6-7-x3-x4-x5-x6-IDh3Yse.html?search_reason=search%7Corganic",
+        "phone": "0753391343",
+        "listing": {
+          "title": "Modul Apple CarPlay Android Auto BMW Seria 1 2 3 4 5 6 7 X3 X4 X5 X6",
+          "price": "999 lei",
+          "description": "DescriereModul BMW Wireless Apple CarPlay & Android Auto CIC NBT System\n\nCaractreristici produs:\n\n• Compatibil cu Apple CarPlay wireless, conectat prin Bluetooth, transfer de date prin WiFi\n• Noua funcție AirPlay permite transferul prin Wi-Fi pentru redarea de filme, navigare și muzică folosind iPhone\n• Funcția AirPlay este o tehnologie Apple care permite oglindirea ecranului iPhone prin Wi-Fi permițând transmiterea de conținut video ( ex. Youtube, Netflix, Disnay+ ) direct pe ecranul mașinii tale.\n• Pentru a utiliza CarPlay cu fir, dezactivați mai întâi WiFi-ul și conectați-vă printr-un cablu Lightning (oferind o conexiune cu fir, menținând telefonul încărcat simultan).\n• Acceptă Android Auto și Android Mirroring pentru telefoanele Android.\n• Sunt disponibile aplicații de navigare GPS precum Google Maps, Waze și Apple Maps, care oferă informații despre trafic în timp real.\n• Aplicațiile muzicale precum Spotify, Apple Music, Amazon etc. transmit audio prin intermediul suportului Bluetooth din fabrică.\n• Bucurați-vă de videoclipurile și muzica preferate\n• Control vocal activat prin rostirea cuvântului „Hei Siri…”\n• Acceptă intrare cameră frontală/spate aftermarket (sunt acceptate linii de ghidare dinamice).\n• Redați muzică și videoclipuri prin intermediul unei unități flash USB conectând-o la portul USB al kitului CarPlay.\n• EQ reglabil pentru cea mai bună calitate audio. Alegeți liber stilul audio preferat (Pop, Rock, Soft, Standard etc.).\n• Control complet prin butoane OEM.\n• Intrare HDMI disponibilă, permițând conectarea cu un dispozitiv HDMI pentru video de înaltă definiție.\n\nModele compatibile: \n\nBMW Seria 1 F20/F21  (2010–2018), \n\nBMW Seria 2 Active Tourer F45 (2013–2018)\nBMW Seria 2 Cabrio F23  (2014–2018)\nBMW Seria 2 Coupe F22 (2012–2018)\nBMW Seria 2 Grand Tourer F46 (2014–2018)\nBMW Seria 2 M2 Coupe F87 (2014–2018)\n\nBMW Seria 3 F30/F31  (2011–2018)\nBMW Seria 3 Gran Turismo F34  (2012–2018)\nBMW Seria M3 F80  (2012–2018)\n\nBMW Seria 4 F32/F33  (2013–2017)\nBMW Seria 4 Gran Coupé F36 (2013–2018)\nBMW M4 Coupé F82  (2013–2018)\nBMW M4 Cabrio F83  (2013–2018)\n\nBMW Seria 5 F10/F11  (2010–2016)\nBMW Seria 5 Gran Turismo F07  (2010–2016)\nBMW Seria 5 G30/G31  (2017–2020)\n\nBMW Seria 6 F12/F13 (2011–2018)\nBMW Seria 6 Gran Coupé F06 (2011–2018)\n\nBMW Seria 7 F01, F02  (2010–2015)\n\nBMW X1  E84 (2012–2015)\nBMW X1  F48 (2015–2018)\n\nBMW X3 F25 (2010–2017)\nBMW X3 G01 (2016–2018)\n\nBMW X4 F26 (2014–2018)\n\nBMW X5 F15 (2012–2018)\nBMW X5 F16 (2013–2018)\n\nBMW Z4 Roadster E89 (2008–2016)\n\nFor Mini: Clubman F54, F55, F56, Convertible F57, Countryman F60/R60, Paceman R60, Paceman R61;\nFor BMW I3 Series: I01  (2013–2018);\nFor BMW I3 series: I3 (I01)\n\nFor BMW I8 series: (2014-2019)\n\nPreț începând de la 999 lei în funcție de sistemul infotainment de pe mașină.\n\nPretul afisat reprzinta produsul in sine la care se va adauga tariful de montaj.\n\nAsigur montaj profesional contra cost cât și factură fiscală.",
+          "sellerName": "Dorin",
+          "location": null,
+          "memberSince": "Pe OLX din septembrie 2016",
+          "lastSeen": "Activ pe 10 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/modul-apple-carplay-android-auto-bmw-seria-1-2-3-4-5-6-7-x3-x4-x5-x6-IDh3Yse.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773665535325,
+          "navigated": 1773665540883,
+          "done": 1773665547675,
+          "totalMs": 12350
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:52:15.323Z",
+    "updatedAt": "2026-03-16T12:52:28.020Z"
+  },
+  {
+    "id": "mission-1773665595159-xkl488",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-13-2022-iunie-128-gb-IDjXO9I.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-13-2022-iunie-128-gb-IDjXO9I.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Iphone 13 - 2022 iunie - 128 GB",
+          "price": "950 lei",
+          "description": "DescriereVand iphone 13 - albastru , cumparat in iunie 2022 \nEcranul si camera fata nu prezinta niciun defect.\nTelefonul prezinta cateva zgarieturi pe margini \nRecomand o mica curatare la mufa, am facut una acum 3 luni. \nFolia de sticla a camerei wide este sparta, dar nu afecteaza la poze.\nSanatatea bateriei este de 78%. \nFace id-ul nu functioneaza. \nSe poate cumpara pentru uz normal sau pentru piese. \nVine cu cutia originala si daca se doreste si cu 2 huse.\nTelefonul este updatat la ios 26, ultima versiune aparuta.",
+          "sellerName": "Paul",
+          "location": null,
+          "memberSince": "Pe OLX din mai 2014",
+          "lastSeen": "Activ pe 11 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/iphone-13-2022-iunie-128-gb-IDjXO9I.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665595160,
+          "navigated": 1773665598963,
+          "done": 1773665610907,
+          "totalMs": 15747
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:53:15.159Z",
+    "updatedAt": "2026-03-16T12:53:31.687Z"
+  },
+  {
+    "id": "mission-1773665620621-f4ua04",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "iPhone 11 Pro cu 88% baterie",
+          "price": "900 lei",
+          "description": "DescriereiPhone 11 Pro de 64Gb.\nTelefonul arată bine, cu puncte fine de la husa pe ra și funcționează foarte bine, cu iOS la zi.\nBaterie 88% capacitate.\nSe vinde cu husă nouă MagSafe si cablu date original.\nNu se acceptă schimburi\nPreț fix 900 lei",
+          "sellerName": "marcela5ionache",
+          "location": null,
+          "memberSince": "Pe OLX din februarie 2026",
+          "lastSeen": "Activ azi la 07:36",
+          "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "Timed out after waiting 30000ms",
+        "timing": {
+          "start": 1773665620623,
+          "navigated": 1773665627684,
+          "done": 1773665733042,
+          "totalMs": 112419
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:53:40.622Z",
+    "updatedAt": "2026-03-16T12:55:33.285Z"
+  },
+  {
+    "id": "mission-1773665687881-6vdnvh",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "iPhone 11 Pro cu 88% baterie",
+          "price": "900 lei",
+          "description": "DescriereiPhone 11 Pro de 64Gb.\nTelefonul arată bine, cu puncte fine de la husa pe ra și funcționează foarte bine, cu iOS la zi.\nBaterie 88% capacitate.\nSe vinde cu husă nouă MagSafe si cablu date original.\nNu se acceptă schimburi\nPreț fix 900 lei",
+          "sellerName": "marcela5ionache",
+          "location": null,
+          "memberSince": "Pe OLX din februarie 2026",
+          "lastSeen": "Activ azi la 07:36",
+          "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665687883,
+          "navigated": 1773665692394,
+          "done": 1773665701716,
+          "totalMs": 13833
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:54:47.881Z",
+    "updatedAt": "2026-03-16T12:55:02.091Z"
+  },
+  {
+    "id": "mission-1773665793900-mq7t4n",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "iPhone 11 Pro cu 88% baterie",
+          "price": "900 lei",
+          "description": "DescriereiPhone 11 Pro de 64Gb.\nTelefonul arată bine, cu puncte fine de la husa pe ra și funcționează foarte bine, cu iOS la zi.\nBaterie 88% capacitate.\nSe vinde cu husă nouă MagSafe si cablu date original.\nNu se acceptă schimburi\nPreț fix 900 lei",
+          "sellerName": "marcela5ionache",
+          "location": null,
+          "memberSince": "Pe OLX din februarie 2026",
+          "lastSeen": "Activ azi la 07:36",
+          "url": "https://www.olx.ro/d/oferta/iphone-11-pro-cu-88-baterie-IDkhzGP.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665793902,
+          "navigated": 1773665798966,
+          "done": 1773665809133,
+          "totalMs": 15231
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:56:33.900Z",
+    "updatedAt": "2026-03-16T12:56:49.852Z"
+  },
+  {
+    "id": "mission-1773665825595-sadn5d",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Iphone 12 128GB BLACK | Stare foarte buna | Liber icloud",
+          "price": "950 lei",
+          "description": "DescriereVand iPhone 12 128GB BLACK,in stare foarte buna ,perfect funcțional. Telefonul a fost folosit cu grijă.\n\nBaterie: 82% - funcționează bine pentru utilizare zilnică\n128GB spațiu - suficient pentru aplicații ,poze și video\nAspect - bine întretinut dar cu câteva zgârieturi minore care nu se văd cu ochiul liber \nFace ID/camera/touch - toate funcționează perfect \niCloud liber,liber de rețea!!\n \nTelefonul merge rapid și fără probleme,ideal pentru utilizare zilnică\n\nSe poate testa înainte de cumpărare \nTrimit și prin curier\n\nPreț ușor negociabil\nPrimul venit, primul servit",
+          "sellerName": "Mathias",
+          "location": null,
+          "memberSince": "Pe OLX din septembrie 2025",
+          "lastSeen": "Activ azi la 04:52",
+          "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665825597,
+          "navigated": 1773665831685,
+          "done": 1773665842174,
+          "totalMs": 16577
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:57:05.595Z",
+    "updatedAt": "2026-03-16T12:57:22.709Z"
+  },
+  {
+    "id": "mission-1773665855071-ynoo0x",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Iphone 12 128GB BLACK | Stare foarte buna | Liber icloud",
+          "price": "950 lei",
+          "description": "DescriereVand iPhone 12 128GB BLACK,in stare foarte buna ,perfect funcțional. Telefonul a fost folosit cu grijă.\n\nBaterie: 82% - funcționează bine pentru utilizare zilnică\n128GB spațiu - suficient pentru aplicații ,poze și video\nAspect - bine întretinut dar cu câteva zgârieturi minore care nu se văd cu ochiul liber \nFace ID/camera/touch - toate funcționează perfect \niCloud liber,liber de rețea!!\n \nTelefonul merge rapid și fără probleme,ideal pentru utilizare zilnică\n\nSe poate testa înainte de cumpărare \nTrimit și prin curier\n\nPreț ușor negociabil\nPrimul venit, primul servit",
+          "sellerName": "Mathias",
+          "location": null,
+          "memberSince": "Pe OLX din septembrie 2025",
+          "lastSeen": "Activ azi la 04:52",
+          "url": "https://www.olx.ro/d/oferta/iphone-12-128gb-black-stare-foarte-buna-liber-icloud-IDknREy.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665855072,
+          "navigated": 1773665860391,
+          "done": 1773665871714,
+          "totalMs": 16642
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:57:35.071Z",
+    "updatedAt": "2026-03-16T12:57:52.198Z"
+  },
+  {
+    "id": "mission-1773665873882-08zfkc",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-se-32gb-baterie-89-touchid-nu-fuctioneaza-neverlocked-IDknrTZ.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-se-32gb-baterie-89-touchid-nu-fuctioneaza-neverlocked-IDknrTZ.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Iphone se 32gb, baterie 89%, touchid nu fuctioneaza, neverlocked",
+          "price": "120 lei",
+          "description": "DescriereIphone se 32gb, baterie 89%, touchid nu functioneaza, neverlocked, perfect functional (mai putin amprenta), doar telefonul asa cum se vede in imagini fara alte accesorii.\n\nSe da doar cu predare in Timisoara.",
+          "sellerName": "div",
+          "location": null,
+          "memberSince": "Pe OLX din iunie 2023",
+          "lastSeen": "Activ pe 14 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/iphone-se-32gb-baterie-89-touchid-nu-fuctioneaza-neverlocked-IDknrTZ.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773665873884,
+          "navigated": 1773665878770,
+          "done": 1773665889734,
+          "totalMs": 15850
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:57:53.882Z",
+    "updatedAt": "2026-03-16T12:58:10.249Z"
+  },
+  {
+    "id": "mission-1773665908166-z4txlf",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/iphone-se-2020-256gb-bat-100-lazar-amanet-crangasi-41822-IDknKIB.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/iphone-se-2020-256gb-bat-100-lazar-amanet-crangasi-41822-IDknKIB.html?search_reason=search%7Corganic",
+        "phone": "0721810321",
+        "listing": {
+          "title": "Iphone SE 2020 256GB bat 100% Lazar Amanet Crangasi 41822",
+          "price": "250 lei",
+          "description": "DescriereProdus vandut de Agentia de AMANET CRANGASI LAZAR\n\n# Avem Peste 1000 de produse la vanzare!\n\n# Se pot achizitiona produse în rate!\n\n# Trimitem pe curier doar cu plata integrală in avans în baza unei facturi!\n\n# Preturile afisate sunt NEGOCIABILE DOAR IN MAGAZIN!!!\n\n# Oferim garantie tehnica si de provenienta pentru produsele noastre!\n\n# Oferim bon fiscal pentru orice achizitie si factura la cerere!\n\n# Program de lucru cu publicul:\n\nLuni-Vineri: 10:00-20:00\n\nSambata: 10.00-18.00\nDuminica: 10.00-18.00\n\n# Adresa Calea Crangasi nr 22, vis-a-vis de Piata Crangasi, la 200 de metri de statia de Metrou Crangasi, perete comun cu Salon Igiena si Farmacia DR.Max\n\n# Evaluam produsele cu pana la 70% din preturile de pe OLX !\n\n# EVALUARILE PRODUSELOR SI STABILIREA DIFERENTEI SE FAC DOAR IN MAGAZIN",
+          "sellerName": "Lazar Amanet Crangasi",
+          "location": null,
+          "memberSince": "Pe OLX din noiembrie 2012",
+          "lastSeen": "Activ azi la 13:02",
+          "url": "https://www.olx.ro/d/oferta/iphone-se-2020-256gb-bat-100-lazar-amanet-crangasi-41822-IDknKIB.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773665908167,
+          "navigated": 1773665913421,
+          "done": 1773665921342,
+          "totalMs": 13175
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T12:58:28.166Z",
+    "updatedAt": "2026-03-16T12:58:42.199Z"
+  },
+  {
+    "id": "mission-1773667406534-bms4yo",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/jante-bmw-r18-5x120-m437-style-x3-x1-seria-5-seria-3-seria-1-IDjdBzX.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/jante-bmw-r18-5x120-m437-style-x3-x1-seria-5-seria-3-seria-1-IDjdBzX.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Jante BMW R18 5x120 M437 Style | X3, X1, Seria 5, Seria 3, Seria 1",
+          "price": "3 980 lei",
+          "description": "Descriere⫸ CUMPĂRĂ MAI UȘOR PE RIMNOVA.EU ⫷\n\nDă un plus de stil și performanță mașinii tale cu jantele BMW R18 5x120 M437 Style. Concepute pentru un echilibru perfect între eleganță și durabilitate, sunt ideale pentru X3, X1, Seria 5, Seria 3, Seria 1, etc.\n\nSpecificații tehnice\n• Diametru: 18 inch\n• PCD: 5x120\n• Lățime: 8.5J\n• Offset: ET20\n• Gaura centrală: 72.6 mm\n• Culoare: Antracit cu finisaj Diamond Cut\n• Certificări de calitate: JWL, VIA, IATF 16949/ISO9001\n• Garanție: 3 ani\n\n⫸ Prețul afișat este pentru un set și include TVA\n*TVA deductibil pentru persoanele juridice.\n\nBeneficii premium pentru tine:\n• Transport GRATUIT și verificare la livrare – pentru siguranță maximă și confort total la fiecare comandă.\n• Plata ramburs la curier – cumpără fără griji, plătești doar când primești, fie cu cardul, fie în numerar.\n• Set complet de montaj inclus: 20 de prezoane/piulițe, 4 inele ghidaj, 4 capace centrale și 4 valve cromate.\n⫸ Ai tot ce îți trebuie pentru o montare sigură, rapidă și fără costuri ascunse!\n\nCompatibilitate\n• BMW X1: E84\n• BMW X3: E83 F25\n• BMW seria 1: E81 E82 E87 E88 F20 F21\n• BMW seria 3: E90 E91 E92 E93 F30 F31\n• BMW seria 5: E60 E61 F10 F11 F07\n\nContactează-ne acum pentru a confirma rapid compatibilitatea și a te asigura că faci cea mai bună alegere.",
+          "sellerName": "RIMNOVA.EU",
+          "location": null,
+          "memberSince": "Pe OLX din aprilie 2016",
+          "lastSeen": "Activ pe 20 februarie 2026",
+          "url": "https://www.olx.ro/d/oferta/jante-bmw-r18-5x120-m437-style-x3-x1-seria-5-seria-3-seria-1-IDjdBzX.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773667406537,
+          "navigated": 1773667411867,
+          "done": 1773667419630,
+          "totalMs": 13093
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T13:23:26.534Z",
+    "updatedAt": "2026-03-16T13:23:40.583Z"
+  },
+  {
+    "id": "mission-1773667425627-iipl45",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/kit-inaltare-suspensie-hyundai-tucson-4-5cm-IDilxrx.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/kit-inaltare-suspensie-hyundai-tucson-4-5cm-IDilxrx.html?search_reason=search%7Corganic",
+        "phone": "0758439969",
+        "listing": {
+          "title": "Kit inaltare suspensie Hyundai Tucson +4.5cm",
+          "price": "520 lei",
+          "description": "DescriereKit inaltare suspensie pentru Hyundai Tucson (2004-2010) cu +4.5 cm pentru toate motorizarile diesel/benzina, menit sa creasca garda la sol cu 4.5cm\nKitul este alcatuit din inaltatoare de poliamida(garantate pe viata).\nInaltatoarele vin insotite de suruburi/piulite si instructiuni de montaj.\nInaltarea nu necesita alte modificari.\n\nProdusul este insotit de FACTURA",
+          "sellerName": "MBA OFFROAD",
+          "location": null,
+          "memberSince": "Pe OLX din martie 2018",
+          "lastSeen": "Activ pe 09 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/kit-inaltare-suspensie-hyundai-tucson-4-5cm-IDilxrx.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773667425629,
+          "navigated": 1773667428598,
+          "done": 1773667435457,
+          "totalMs": 9828
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T13:23:45.627Z",
+    "updatedAt": "2026-03-16T13:23:55.748Z"
+  },
+  {
+    "id": "mission-1773667580058-uuz5d0",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/blaturi-si-mese-din-granit-si-marmura-IDbGORu.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/blaturi-si-mese-din-granit-si-marmura-IDbGORu.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Blaturi si mese din GRANIT si MARMURA",
+          "price": "499 lei",
+          "description": "DescriereOferim blaturi si mese din GRANIT si MARMURA\nOferim toata gama de placaje , glafuri , pervaze , podele din marmura si granit la cele mai bune preturi.\nVa stam la dispozitie cu orice fel de informatie la numarul de telefon 07******05 !\n\nVa asteptam la showroom ul nostru deschis in Sibiu , Sos. Alba Iulia ,nr 74!",
+          "sellerName": "Dani",
+          "location": null,
+          "memberSince": "Pe OLX din iulie 2017",
+          "lastSeen": "Activ pe 09 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/blaturi-si-mese-din-granit-si-marmura-IDbGORu.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773667580062,
+          "navigated": 1773667585057,
+          "done": 1773667595252,
+          "totalMs": 15190
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T13:26:20.058Z",
+    "updatedAt": "2026-03-16T13:26:35.702Z"
+  },
+  {
+    "id": "mission-1773667621019-e7ulse",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/jante-audi-r18-5x112-rs7-style-a1-a2-a3-a4-a5-a6-q5-q3-q2-vw-skoda-IDj5OSi.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/jante-audi-r18-5x112-rs7-style-a1-a2-a3-a4-a5-a6-q5-q3-q2-vw-skoda-IDj5OSi.html?search_reason=search%7Corganic",
+        "phone": "0751951207",
+        "listing": {
+          "title": "Jante Audi R18 5x112 RS7 Style | A1 A2 A3 A4 A5 A6 Q5 Q3 Q2, VW, Skoda",
+          "price": "3 980 lei",
+          "description": "Descriere⫸ CUMPĂRĂ MAI UȘOR PE RIMNOVA.EU ⫷\n\nAdaugă un plus de sportivitate și eleganță mașinii tale Audi, VW sau Skoda cu jantele R18 5x112 RS7 Style, perfecte pentru modelele A1, A2, A3, A4, A5, A6, Q5, Q3, Q2. Designul lor modern, inspirat de modelele RS, va transforma complet aspectul vehiculului tău.\n\nSpecificații tehnice:\n• Diametru: 18 inch\n• PCD: 5x112\n• Lățime: 8.0J\n• Offset: ET35\n• Gaura centrală: 66.5 mm\n• Culoare: Negru cu finisaj Diamond Cut\n• Certificări de calitate: JWL, VIA, IATF 16949/ISO9001\n• Garanție: 3 ani\n\n⫸ Prețul afișat este pentru un set și include TVA\n*TVA deductibil pentru persoanele juridice.\n\nBeneficii premium pentru tine:\n• Transport GRATUIT și verificare la livrare – pentru siguranță maximă și confort total la fiecare comandă.\n• Plata ramburs la curier – cumpără fără griji, plătești doar când primești, fie cu cardul, fie în numerar.\n• Set complet de montaj inclus: 20 de prezoane/piulițe, 4 inele ghidaj, 4 capace centrale și 4 valve cromate.\n⫸ Ai tot ce îți trebuie pentru o montare sigură, rapidă și fără costuri ascunse!\n\nCompatibilitate:\n• Audi: A1 A2 A3 A4 A5 A6 Q5 Q3 Q2\n• VW: Touareg, Tiguan, Phaeton, Passat, Arteon, Jetta, Golf, Scirocco, Touran\n• Skoda: Kodiaq, Karoq, Superb, Octavia, Fabia\n• Seat/Cupra: Altea, Ateca, Tarraco, Toledo, Formentor, Leon, Born, Tavascan\n\nContactează-ne acum pentru a confirma rapid compatibilitatea și a te asigura că faci cea mai bună alegere.\n\n0:21\n⫸ Vezi cât de bine arată jantele noastre în acest clip: www.youtube.com/watch?v=-TzbEx9uo10",
+          "sellerName": "RIMNOVA.EU",
+          "location": null,
+          "memberSince": "Pe OLX din aprilie 2016",
+          "lastSeen": "Activ pe 20 februarie 2026",
+          "url": "https://www.olx.ro/d/oferta/jante-audi-r18-5x112-rs7-style-a1-a2-a3-a4-a5-a6-q5-q3-q2-vw-skoda-IDj5OSi.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773667621021,
+          "navigated": 1773667625577,
+          "done": 1773667631433,
+          "totalMs": 10412
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T13:27:01.019Z",
+    "updatedAt": "2026-03-16T13:27:12.001Z"
+  },
+  {
+    "id": "mission-1773667945287-9uo258",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/blugi-levis-615-orange-tab-1998-barbati-talie-36-x-34-talie-90-cm-IDko1GB.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/blugi-levis-615-orange-tab-1998-barbati-talie-36-x-34-talie-90-cm-IDko1GB.html?search_reason=search%7Corganic",
+        "phone": "0746120901",
+        "listing": {
+          "title": "Blugi LEVIS 615 Orange Tab 1998 Barbati | Talie 36 x 34 (Talie 90 cm)",
+          "price": "219 lei",
+          "description": "DescriereDIMENSIUNI\nTalie - 90 (45 x 2) cm\nLungime Totala - 115 cm\nLungime Interior - 86 cm\nTerminatie - 20 cm\n\nDETALII\nMarime: W36 L34\nCuloare: Albastru\nMaterial: Bumbac\nModel: 615\nAn Fabricatie: 1998\n\nCroială clasică straight leg, dintr-un denim robust, un aspect retro veritabil greu de replicat de modelele noi. Ideal pentru colecționari sau pasionații de stilul anilor '90 care caută calitate și durabilitate.\n\nTRANSPORT\nFan Courier\nPosta Romana\nEasybox\n\nData Listare: 16.03.2026",
+          "sellerName": "La Noi",
+          "location": null,
+          "memberSince": "Pe OLX din ianuarie 2017",
+          "lastSeen": "Activ azi la 15:16",
+          "url": "https://www.olx.ro/d/oferta/blugi-levis-615-orange-tab-1998-barbati-talie-36-x-34-talie-90-cm-IDko1GB.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773667945290,
+          "navigated": 1773667950298,
+          "done": 1773667957931,
+          "totalMs": 12641
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T13:32:25.287Z",
+    "updatedAt": "2026-03-16T13:32:38.607Z"
+  },
+  {
+    "id": "mission-1773669625443-89dkl5",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/capat-tirant-inferior-john-deere-catg-3-import-germania-original-pret-IDjF4vI.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/capat-tirant-inferior-john-deere-catg-3-import-germania-original-pret-IDjF4vI.html?search_reason=search%7Corganic",
+        "phone": "0751561211",
+        "listing": {
+          "title": "Capat tirant inferior john deere catg 3 import Germania original pret",
+          "price": "1 100 lei",
+          "description": "DescriereCapat tirant inferior john deere catg 3 import Germania original pret 1100 lei cu tva \nFurther information\nCategory:\t3\nA (mm):\t45\nB (mm):\t25\nC (mm):\t20\nD (mm):\t37\nE (mm):\t100\nH (mm):\t90\nL (mm):\t80\nVersion:\tLower link\nWeight:\t2,26 kg\nPe baza de comanda",
+          "sellerName": "piese utilaje agricole toată gama 0743478238",
+          "location": null,
+          "memberSince": "Pe OLX din mai 2022",
+          "lastSeen": "Activ azi la 08:04",
+          "url": "https://www.olx.ro/d/oferta/capat-tirant-inferior-john-deere-catg-3-import-germania-original-pret-IDjF4vI.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773669625446,
+          "navigated": 1773669630974,
+          "done": 1773669637941,
+          "totalMs": 12495
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T14:00:25.443Z",
+    "updatedAt": "2026-03-16T14:00:38.880Z"
+  },
+  {
+    "id": "mission-1773669744749-2fus12",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/birou-cu-scaun-copii-2-5-ani-IDjUGJE.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/birou-cu-scaun-copii-2-5-ani-IDjUGJE.html?search_reason=search%7Corganic",
+        "phone": null,
+        "listing": {
+          "title": "Birou cu scaun copii 2-5 ani",
+          "price": "50 lei",
+          "description": "DescriereBirou cu scaun copii 2-5 ani. Piesele sunt home made din pal (nu am gasit sa cumparam asa micute). Blatul este 75*50.\nPretul 50lei",
+          "sellerName": "Stefan",
+          "location": null,
+          "memberSince": "Pe OLX din aprilie 2025",
+          "lastSeen": "Activ pe 17 octombrie 2025",
+          "url": "https://www.olx.ro/d/oferta/birou-cu-scaun-copii-2-5-ani-IDjUGJE.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773669744753,
+          "navigated": 1773669750437,
+          "done": 1773669761726,
+          "totalMs": 16973
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T14:02:24.750Z",
+    "updatedAt": "2026-03-16T14:02:42.261Z"
+  },
+  {
+    "id": "mission-1773669807812-xysv0g",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/vnd-apt-cu-3-camere-persoan-fizic-IDkj595.html?search_reason=search%7Cpromoted",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/vnd-apt-cu-3-camere-persoan-fizic-IDkj595.html?search_reason=search%7Cpromoted",
+        "phone": "0725171410",
+        "listing": {
+          "title": "Vãnd apt cu 3 camere persoanã fizicã",
+          "price": "140 000 €",
+          "description": "DescrierePersoanã fizicã vãnd apartament cu 3 camere decomandate,balcon  şi pivnițã. Apartamentul se aflã în aleea Frații Buzeşti,Bulevard Mihai Viteazul avãnd o suprafațã de aproximativ 77mp,din care suprafața utilã 64 mp. Imobilul se aflã la etajul 7 din 10 al unui bloc dotat cu lift şi interfon.Acesta dispune de un hol generos la intrare din care se face accesul în livingul spațios şi luminos open-space cu balcon închis cu termopane de calitate.Apt-ul a fost complect renovat in anul 2020. Acesta se vinde complect mobilat şi utilat,bucãtãrie,2 dormitoare spațioase şi baie.Acesta beneficiazã şi de o pivnițã la subsolul blocului.Apt-ul este dotat cu parchet laminat,electro casnicele necesare,termopane mari ceea ce îi oferã o luminozitate sporitã.Apt-ul se aflã în proximitatea mai multor puncte de interes,gradinite,şcoli,mijloace de transport în comun,magazine alimentare,farmacii,etc.Apt se vinde  la prețul de 140.000 euro negociabil.Imobilul momentan este închiriat şi se vinde cu preluarea contractului de închiriere încheiat în luna ianuarie.Prefer sã fiu contactatã pe whatsapp.",
+          "sellerName": "Larissa",
+          "location": null,
+          "memberSince": "Pe OLX din septembrie 2021",
+          "lastSeen": "Activ pe 09 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/vnd-apt-cu-3-camere-persoan-fizic-IDkj595.html?search_reason=search%7Cpromoted"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773669807815,
+          "navigated": 1773669812645,
+          "done": 1773669821643,
+          "totalMs": 13828
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T14:03:27.812Z",
+    "updatedAt": "2026-03-16T14:03:42.783Z"
+  },
+  {
+    "id": "mission-1773669828176-3ebcwq",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/apartament-3-cam-intabulat-orice-creditare-imobil-locuit-proprietar-IDjVVMh.html?search_reason=search%7Corganic",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/apartament-3-cam-intabulat-orice-creditare-imobil-locuit-proprietar-IDjVVMh.html?search_reason=search%7Corganic",
+        "phone": "0767005000",
+        "listing": {
+          "title": "Apartament 3 cam,INTABULAT, ORICE CREDITARE ,imobil LOCUIT, proprietar",
+          "price": "110 000 €",
+          "description": "DescriereSe oferă spre vânzare un apartament INTABULAT, cu 3 camere, decomandat, situat pe strada Octavian Goga nr. 5, vizavi de Shopping City. Imobilul face parte dintr-un bloc nou, modern, deja finalizat și locuit.\n\nAvantaje principale:\n\nFără agenție, fără comision – vânzare direct de la dezvoltator\n\nLoc de parcare inclus în preț\n\nApartament disponibil imediat\n\nAcces rapid la mall, restaurante, școli și mijloace de transport\n\nDetalii apartament:\n\nSuprafață utilă: 74,4 mp\nSuprafață construită: 88,3 mp\n\nCompartimentare eficientă: living spațios, două dormitoare, bucătărie open-space, baie modernă, balcon\n\nDotări ale imobilului:\n\nAcces securizat\n\nAlei pavate și spații comune amenajate\n\nIdeal atât pentru locuit, cât și pentru investiție. Apartamentul oferă confort, siguranță și accesibilitate într-o locație excelentă.\n\nPrețuri:\n\nPlata integrală: 110.000 EUR\n\nACCEPTAM ORICE FORMA DE CREDITARE , INCLUSIV RATE DEZVOLTATOR ,printr-o oferta personalizata nevoilor d-voastră  \n\nTOATE CAILE DE ACCES ASFALTATE sau PAVATE \n\nLOC DE JOACA\n\n4 CAI DE ACCES IN ANSAMBLU\n\nMUTARE IMEDIATA\n\nCOD PRODUS  K 503\n\nPentru mai multe detalii sau pentru programarea unei vizionări, ne puteți contacta la:\n\n07********00 \n\n07********00\n\n07********31",
+          "sellerName": "Dezvoltator Apartamente Sibiu",
+          "location": null,
+          "memberSince": "Pe OLX din octombrie 2025",
+          "lastSeen": "Activ azi la 08:55",
+          "url": "https://www.olx.ro/d/oferta/apartament-3-cam-intabulat-orice-creditare-imobil-locuit-proprietar-IDjVVMh.html?search_reason=search%7Corganic"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773669828178,
+          "navigated": 1773669832723,
+          "done": 1773669838503,
+          "totalMs": 10325
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T14:03:48.176Z",
+    "updatedAt": "2026-03-16T14:03:59.268Z"
+  },
+  {
+    "id": "mission-1773669855335-pj25mr",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/d/oferta/apartament-3-camere-115m2-sibiu-tip-mansarda-zona-tilisca-IDjiiix.html?search_reason=search%7Cpromoted",
+    "useProxy": false,
+    "status": "completed",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/apartament-3-camere-115m2-sibiu-tip-mansarda-zona-tilisca-IDjiiix.html?search_reason=search%7Cpromoted",
+        "phone": "0760246004",
+        "listing": {
+          "title": "Apartament 3 camere , 115m2 , Sibiu .Tip mansarda, Zona Tilisca",
+          "price": "88 000 €",
+          "description": "DescriereApartament 115m2 tip mansarda cu balcon 12m lungime spre zona muntoasa. Situat intr-o zona linistita cu o priveliste exceptionala, cu vedere spre parcul Belvedere si spre munti. Acces rapid, facil, la doua artere auto  principale spre zona vest si sud. Gradinita existenta in apropriere si una anuntata ca investitie noua de primarie pentru acest an. Zona parcare suficienta pentru ansamblul de locuinte. In apropiere, statii pentru mijloace de transport in comun.",
+          "sellerName": "soimamircea",
+          "location": null,
+          "memberSince": "Pe OLX din martie 2024",
+          "lastSeen": "Activ pe 14 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/apartament-3-camere-115m2-sibiu-tip-mansarda-zona-tilisca-IDjiiix.html?search_reason=search%7Cpromoted"
+        },
+        "proxy": "direct",
+        "success": true,
+        "error": null,
+        "timing": {
+          "start": 1773669855336,
+          "navigated": 1773669860472,
+          "done": 1773669867731,
+          "totalMs": 12395
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 1,
+    "progress": 100,
+    "createdAt": "2026-03-16T14:04:15.335Z",
+    "updatedAt": "2026-03-16T14:04:28.430Z"
+  },
+  {
+    "id": "mission-1773672643660-n4x2rm",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/electronice-si-electrocasnice/electrocasnice/",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "success": false,
+        "error": "Cannot read properties of undefined (reading 'length')"
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T14:50:43.660Z",
+    "updatedAt": "2026-03-16T14:56:20.828Z"
+  },
+  {
+    "id": "mission-1773675863584-pubwel",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/electronice-si-electrocasnice/electrocasnice/",
+    "useProxy": false,
+    "status": "aborted",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T15:44:23.584Z",
+    "updatedAt": "2026-03-16T15:46:53.473Z"
+  },
+  {
+    "id": "mission-1773675995398-nx6rae",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/electronice-si-electrocasnice/electrocasnice/",
+    "useProxy": false,
+    "status": "aborted",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T15:46:35.399Z",
+    "updatedAt": "2026-03-16T15:46:51.501Z"
+  },
+  {
+    "id": "mission-1773676867898-65zdss",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "success": false,
+        "error": "Failed to discover strategy for null after 3 attempts. Last error: net::ERR_TUNNEL_CONNECTION_FAILED at https://www.olx.ro/imobiliare/sibiu/?currency=EUR"
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:01:07.898Z",
+    "updatedAt": "2026-03-16T16:01:11.816Z"
+  },
+  {
+    "id": "mission-1773676896548-cqn8qe",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "success": false,
+        "error": "Failed to discover strategy for null after 3 attempts. Last error: net::ERR_TUNNEL_CONNECTION_FAILED at https://www.olx.ro/imobiliare/sibiu/?currency=EUR"
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:01:36.549Z",
+    "updatedAt": "2026-03-16T16:01:40.568Z"
+  },
+  {
+    "id": "mission-1773676942847-pcxbir",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/electronice-si-electrocasnice/electrocasnice/",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "success": false,
+        "error": "Failed to discover strategy for null after 3 attempts. Last error: net::ERR_TUNNEL_CONNECTION_FAILED at https://www.olx.ro/electronice-si-electrocasnice/electrocasnice/"
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:02:22.847Z",
+    "updatedAt": "2026-03-16T16:02:26.504Z"
+  },
+  {
+    "id": "mission-1773677207826-d9my7m",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+    "useProxy": false,
+    "status": "aborted",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:06:47.826Z",
+    "updatedAt": "2026-03-16T16:09:46.077Z"
+  },
+  {
+    "id": "mission-1773677334688-q03drp",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+    "useProxy": false,
+    "status": "aborted",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:08:54.688Z",
+    "updatedAt": "2026-03-16T16:09:42.951Z"
+  },
+  {
+    "id": "mission-1773677616206-fnzl05",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+    "useProxy": false,
+    "status": "aborted",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:13:36.206Z",
+    "updatedAt": "2026-03-16T16:36:16.864Z"
+  },
+  {
+    "id": "mission-1773677869504-ipokxv",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+    "useProxy": false,
+    "status": "aborted",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/d/oferta/inchiriez-in-sibiu-IDkc6LK.html?search_reason=search%7Cpromoted",
+        "title": "Inchiriez in sibiu19,63 €",
+        "price": "19,63 €",
+        "phone": "0724803452",
+        "listing": {
+          "title": "Inchiriez in sibiu",
+          "price": "100 lei",
+          "description": "DescriereProprietar inchiriez apartament\nPentru perioada lunga\n100 lei/noapte. Pretul poate sa difere in functie de numărul de persoane și perioada\nNu accept animale de companie\nUtilat, mobilat\nFrigider, masina de spălat\n0724\n803452",
+          "sellerName": "Levi",
+          "location": null,
+          "memberSince": "Pe OLX din decembrie 2013",
+          "lastSeen": "Activ pe 11 martie 2026",
+          "url": "https://www.olx.ro/d/oferta/inchiriez-in-sibiu-IDkc6LK.html?search_reason=search%7Cpromoted"
+        },
+        "proxy": "direct",
+        "timing": {
+          "start": 1773677879998,
+          "navigated": 1773677884093,
+          "done": 1773677890366,
+          "totalMs": 10368
+        }
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 1,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:17:49.504Z",
+    "updatedAt": "2026-03-16T16:36:14.816Z"
+  },
+  {
+    "id": "mission-1773677944663-zick06",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR&search%5Bprivate_business%5D=business",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "success": false,
+        "error": "Cannot read properties of undefined (reading 'length')"
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 5,
+    "progress": 0,
+    "createdAt": "2026-03-16T16:19:04.663Z",
+    "updatedAt": "2026-03-16T16:24:13.774Z"
+  },
+  {
+    "id": "mission-1773679016198-h4tcuq",
+    "mode": "single",
+    "platform": "olx",
+    "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro",
+    "results": [
+      {
+        "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR",
+        "phone": null,
+        "listing": {
+          "title": null,
+          "price": null,
+          "description": null,
+          "sellerName": null,
+          "location": null,
+          "memberSince": null,
+          "lastSeen": null,
+          "url": "https://www.olx.ro/imobiliare/sibiu/?currency=EUR"
+        },
+        "proxy": "direct",
+        "success": false,
+        "error": "All reveal approaches failed",
+        "timing": {
+          "start": 1773679016201,
+          "navigated": 1773679022248,
+          "done": 1773679025803,
+          "totalMs": 9602
+        }
+      }
+    ],
+    "leadsFound": 1,
+    "leadsContacted": 0,
+    "progress": 100,
+    "createdAt": "2026-03-16T16:36:56.198Z",
+    "updatedAt": "2026-03-16T16:37:06.291Z"
   }
 ]

@@ -271,15 +271,25 @@ export default function OrchestratorView({ config, tasks, setTasks }: Orchestrat
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden mb-4"
           >
-            <QuickDeployPanel onSubmit={(url, mode) => {
-              const text = mode === 'category'
-                ? `Scanează ${url}`
-                : url;
-              // Pass personality through the API call in handleSend or orchestrate separately if needed
-              // For now quickSend uses the currently selected personality
-              quickSend(text);
-              setDeployOpen(false);
-            }} />
+            <QuickDeployPanel
+              onSubmit={(url, mode) => {
+                const text = mode === 'category'
+                  ? `Scanează ${url}`
+                  : url;
+                quickSend(text);
+                setDeployOpen(false);
+              }}
+              onCategoryDeploy={(missionId, url, preset) => {
+                const msg: ChatMessage = {
+                  id: `deploy-${Date.now()}`,
+                  role: 'system',
+                  content: `📂 **Misiune categorie pornită!**\n\n🔗 ${url}\n📊 Filtru: **${preset}** anunțuri\n\n_Misiunea rulează în background. Rezultatele vor apărea automat._`,
+                  timestamp: new Date().toISOString(),
+                };
+                setMessages(prev => [...prev, msg]);
+                setDeployOpen(false);
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -455,9 +465,61 @@ function renderContent(content: string) {
 // Quick Deploy Panel
 // ────────────────────────────────────────────────────────────────
 
-function QuickDeployPanel({ onSubmit }: { onSubmit: (url: string, mode: string) => void }) {
+const CATEGORY_PRESETS = [
+  { label: '10', maxListings: 10, maxPages: 1, maxReveals: 5 },
+  { label: '20', maxListings: 20, maxPages: 1, maxReveals: 5 },
+  { label: 'Prima pagină', maxListings: 50, maxPages: 1, maxReveals: 5 },
+  { label: 'Toate', maxListings: 500, maxPages: 20, maxReveals: 10 },
+];
+
+interface QuickDeployProps {
+  onSubmit: (url: string, mode: string) => void;
+  onCategoryDeploy?: (missionId: string, url: string, preset: string) => void;
+}
+
+function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState<'single' | 'category'>('single');
+  const [selectedPreset, setSelectedPreset] = useState(1); // default: 20
+  const [maxReveals, setMaxReveals] = useState(5);
+  const [deploying, setDeploying] = useState(false);
+
+  const preset = CATEGORY_PRESETS[selectedPreset];
+
+  async function handleDeploy() {
+    if (!url.trim()) return;
+
+    if (mode === 'single') {
+      onSubmit(url.trim(), mode);
+      return;
+    }
+
+    // Category mode → direct API call with filter params
+    setDeploying(true);
+    try {
+      const res = await fetch('/api/orchestrate/full', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: url.trim(),
+          maxPages: preset.maxPages,
+          maxListings: preset.maxListings,
+          maxReveals,
+          useProxy: false,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Deploy failed');
+      // Notify parent about the started mission
+      if (onCategoryDeploy) {
+        onCategoryDeploy(data.missionId || 'started', url.trim(), preset.label);
+      }
+    } catch (err: any) {
+      console.error('[Deploy] Category deploy failed:', err.message);
+    } finally {
+      setDeploying(false);
+    }
+  }
 
   return (
     <div className="glass-panel rounded-2xl p-4 space-y-3">
@@ -483,19 +545,70 @@ function QuickDeployPanel({ onSubmit }: { onSubmit: (url: string, mode: string) 
           <span className="block text-[10px] mt-0.5 opacity-70">Scan + batch reveal</span>
         </button>
       </div>
+
+      {/* Category filter presets */}
+      <AnimatePresence>
+        {mode === 'category' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden space-y-2"
+          >
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Câte anunțuri</p>
+            <div className="flex gap-1.5">
+              {CATEGORY_PRESETS.map((p, i) => (
+                <button
+                  key={p.label}
+                  onClick={() => setSelectedPreset(i)}
+                  className={`flex-1 px-2 py-2 rounded-lg border text-center transition-all text-[11px] font-bold ${
+                    selectedPreset === i
+                      ? 'bg-purple-600/20 border-purple-500/40 text-purple-300 shadow-lg shadow-purple-600/10'
+                      : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Max reveals slider */}
+            <div className="flex items-center gap-3 pt-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 whitespace-nowrap">Reveal max</span>
+              <input
+                type="range"
+                min={1}
+                max={Math.min(preset.maxListings, 20)}
+                value={maxReveals}
+                onChange={(e) => setMaxReveals(Number(e.target.value))}
+                className="flex-1 h-1 accent-purple-500"
+              />
+              <span className="text-xs font-black text-purple-300 tabular-nums w-6 text-right">{maxReveals}</span>
+            </div>
+
+            {/* Summary */}
+            <div className="text-[10px] text-zinc-500 bg-zinc-900/50 rounded-lg px-3 py-2 border border-zinc-800/50">
+              📊 Se vor scana <span className="text-zinc-300 font-bold">{preset.maxListings}</span> anunțuri din <span className="text-zinc-300 font-bold">{preset.maxPages}</span> {preset.maxPages === 1 ? 'pagină' : 'pagini'}, 
+              reveal la <span className="text-purple-300 font-bold">{maxReveals}</span> telefoane
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex gap-2">
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder={mode === 'single' ? 'https://www.olx.ro/d/oferta/...' : 'https://www.olx.ro/imobiliare/'}
+          placeholder={mode === 'single' ? 'https://www.olx.ro/d/oferta/...' : 'https://www.olx.ro/imobiliare/sibiu/'}
           className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600"
         />
         <button
-          onClick={() => { if (url.trim()) onSubmit(url.trim(), mode); }}
-          disabled={!url.trim()}
-          className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold text-xs transition-all disabled:opacity-40 shadow-lg shadow-indigo-600/20"
+          onClick={handleDeploy}
+          disabled={!url.trim() || deploying}
+          className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold text-xs transition-all disabled:opacity-40 shadow-lg shadow-indigo-600/20 flex items-center gap-2"
         >
+          {deploying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
           Deploy
         </button>
       </div>

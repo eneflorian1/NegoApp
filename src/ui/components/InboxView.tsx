@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Phone, Mail, ExternalLink, CheckCircle2, ChevronLeft, MoreVertical, AlertCircle, X, MessageSquare, Zap, Users, LineChart, Search, Filter, Trash2 } from 'lucide-react';
+import { Send, Phone, Mail, ExternalLink, CheckCircle2, ChevronLeft, MoreVertical, AlertCircle, X, MessageSquare, Zap, Users, LineChart, Search, Filter, Trash2, PlayCircle, MapPin } from 'lucide-react';
 import { LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lead, Message } from '../types';
@@ -13,6 +13,8 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [startingConvoId, setStartingConvoId] = useState<string | null>(null);
+  const [sendingAddressId, setSendingAddressId] = useState<string | null>(null);
   const [readTimestamps, setReadTimestamps] = useState<Record<string, string>>(() => {
     try {
       return JSON.parse(localStorage.getItem('inboxReadTimestamps') || '{}');
@@ -70,6 +72,35 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
       setMessages(prev => prev.filter(m => m.leadId !== leadId));
     } catch (err) {
       console.error('Failed to delete conversation:', err);
+    }
+  };
+
+  const handleStartConversation = async (leadId: string) => {
+    setStartingConvoId(leadId);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/start-conversation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      // Message will appear via polling
+    } catch (err: any) {
+      console.error('Failed to start conversation:', err);
+      alert('Eroare: ' + (err.message || 'Nu s-a putut porni conversația'));
+    } finally {
+      setStartingConvoId(null);
+    }
+  };
+
+  const handleSendAddress = async (leadId: string) => {
+    setSendingAddressId(leadId);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/send-address`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+    } catch (err: any) {
+      console.error('Failed to send address:', err);
+      alert('Eroare: ' + (err.message || 'Nu s-a putut trimite adresa'));
+    } finally {
+      setSendingAddressId(null);
     }
   };
 
@@ -368,6 +399,21 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                   </div>
                 )}
 
+                {/* Start Conversation Button — for leads with phone but no messages */}
+                {lead.phoneNumber && !leadMeta[lead.id]?.latestTs && lead.status === 'new' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartConversation(lead.id);
+                    }}
+                    disabled={startingConvoId === lead.id}
+                    className="mt-2 w-full py-1.5 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/20 rounded-lg text-[10px] font-bold text-emerald-400 uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <PlayCircle className="w-3 h-3" />
+                    {startingConvoId === lead.id ? 'Se trimite...' : 'Pornește Conversația'}
+                  </button>
+                )}
+
                 {/* Take Over Button */}
                 {lead.isBotActive && (
                   <button
@@ -378,6 +424,21 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                     className="mt-2 w-full py-1.5 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 rounded-lg text-[10px] font-bold text-indigo-400 uppercase tracking-widest transition-all flex items-center justify-center gap-2"
                   >
                     <Zap className="w-3 h-3 fill-indigo-400" /> Take Over Conversation
+                  </button>
+                )}
+
+                {/* Send Address Card — shown when consensus reached */}
+                {lead.status === 'accepted' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSendAddress(lead.id);
+                    }}
+                    disabled={sendingAddressId === lead.id}
+                    className="mt-2 w-full py-2 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 rounded-lg text-[10px] font-bold text-emerald-400 uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50 animate-pulse"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    {sendingAddressId === lead.id ? 'Se trimite adresa...' : 'Trimite Adresa de Livrare'}
                   </button>
                 )}
               </div>
@@ -443,7 +504,31 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-4">
-              {!selectedLead.isBotActive && (
+              {/* Consensus Reached — Send Address Banner */}
+              {selectedLead.status === 'accepted' && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex items-center gap-3 mb-4"
+                >
+                  <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Consens Atins!</p>
+                    <p className="text-[10px] text-emerald-500/70">S-a ajuns la un acord pe preț. Trimite adresa de livrare pentru a finaliza.</p>
+                  </div>
+                  <button
+                    onClick={() => handleSendAddress(selectedLead.id)}
+                    disabled={sendingAddressId === selectedLead.id}
+                    className="px-4 py-2 bg-emerald-500 text-black text-[10px] font-bold rounded-lg hover:bg-emerald-400 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    {sendingAddressId === selectedLead.id ? 'Se trimite...' : 'Trimite Adresa'}
+                  </button>
+                </motion.div>
+              )}
+              {!selectedLead.isBotActive && selectedLead.status !== 'accepted' && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -465,9 +550,19 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                 </motion.div>
               )}
               {leadMessages.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <MessageSquare className="w-10 h-10 text-zinc-700 mb-3 opacity-30" />
-                  <p className="text-sm text-zinc-600">Niciun mesaj inca</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center gap-4">
+                  <MessageSquare className="w-10 h-10 text-zinc-700 mb-1 opacity-30" />
+                  <p className="text-sm text-zinc-600">Niciun mesaj încă</p>
+                  {selectedLead.phoneNumber && selectedLead.status === 'new' && (
+                    <button
+                      onClick={() => handleStartConversation(selectedLead.id)}
+                      disabled={startingConvoId === selectedLead.id}
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <PlayCircle className="w-5 h-5" />
+                      {startingConvoId === selectedLead.id ? 'Se trimite mesajul...' : 'Pornește Conversația'}
+                    </button>
+                  )}
                 </div>
               )}
               {leadMessages.map(msg => (

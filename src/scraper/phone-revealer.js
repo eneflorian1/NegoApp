@@ -328,8 +328,33 @@ class PhoneRevealer {
     for (const [field, selector] of Object.entries(selectors)) {
       data[field] = await browser.getText(selector);
     }
+    // Sanitize price — OLX puts extra text like "Prețul e negociabil" inside the price container
+    if (data.price) {
+      data.price = this._sanitizePrice(data.price);
+    }
     data.url = browser.getUrl();
     return data;
+  }
+
+  /**
+   * Extract clean price from raw text that may contain extra labels.
+   * e.g. "80 000 €Prețul e negociabil" → "80 000 €"
+   *       "127 000 €" → "127 000 €"
+   *       "4 500 lei" → "4 500 lei"
+   *       "Preț la cerere" → "Preț la cerere"
+   */
+  _sanitizePrice(raw) {
+    if (!raw) return raw;
+    // Try to match a price pattern: digits (with optional spaces/dots/commas) followed by currency
+    const match = raw.match(/^([\d][\d\s.,]*\s*(?:€|lei|RON|EUR|USD|\$|£))/i);
+    if (match) return match[1].trim();
+    // Also try currency-first format: €80,000
+    const match2 = raw.match(/^((?:€|lei|RON|EUR|USD|\$|£)\s*[\d][\d\s.,]*)/i);
+    if (match2) return match2[1].trim();
+    // If no currency found, just grab the leading number portion
+    const match3 = raw.match(/^([\d][\d\s.,]*)/);
+    if (match3 && match3[1].trim().length >= 2) return match3[1].trim();
+    return raw;
   }
 
   _normalizePhone(phone) {

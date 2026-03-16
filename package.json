@@ -20,6 +20,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "lucide-react": "^0.546.0",
+    "mongoose": "^9.3.0",
     "motion": "^12.23.24",
     "p-queue": "^8.0.0",
     "puppeteer": "^22.0.0",
@@ -30,6 +31,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.8.0",
+    "ssh2": "^1.17.0",
     "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main"
   },
   "devDependencies": {

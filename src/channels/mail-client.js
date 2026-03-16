@@ -16,6 +16,7 @@ class MailClient extends EventEmitter {
     this.lastError = null;
     this.knownMessageIds = new Set();
     this.pollInterval = null;
+    this._isFirstPoll = true; // Track first poll to silently skip old messages
 
     this.on('error', (err) => {
       console.error('[AgentMail] Unhandled error:', err.message);
@@ -43,10 +44,16 @@ class MailClient extends EventEmitter {
         inbox = await this.client.inboxes.create({});
       }
 
-      this.inboxId = inbox.inboxId;
-      this.inboxEmail = inbox.email;
+      this.inboxId = inbox.inboxId || inbox.inbox_id || inbox.id;
+      // Try SDK properties first, then construct from inboxId
+      let email = (inbox.email || inbox.address || inbox.emailAddress || '').toLowerCase();
+      if (!email && this.inboxId) {
+        email = `${this.inboxId}@agentmail.to`;
+      }
+      this.inboxEmail = email;
       this.isConnected = true;
       this.lastError = null;
+      this._isFirstPoll = true;
 
       console.log(`[AgentMail] Connected — inbox: ${this.inboxEmail}`);
 
@@ -82,19 +89,37 @@ class MailClient extends EventEmitter {
       const { messages } = await this.client.inboxes.messages.list(this.inboxId);
       if (!messages) return;
 
+      if (this._isFirstPoll) {
+        this._isFirstPoll = false;
+        if (messages.length > 0) {
+          const sample = messages.slice(0, 3).map(m => `"${m.subject || 'fara subiect'}" (${m.createdAt || m.timestamp})`).join(', ');
+          console.log(`[AgentMail] Debug - Primele mesaje gasite: ${sample}`);
+        }
+        for (const msg of messages) {
+          const msgId = msg.messageId || msg.id;
+          this.knownMessageIds.add(msgId);
+        }
+        console.log(`[AgentMail] Indexed ${messages.length} existing messages (skipped on startup)`);
+        return;
+      }
+
       for (const msg of messages) {
         const msgId = msg.messageId || msg.id;
         if (!this.knownMessageIds.has(msgId)) {
           this.knownMessageIds.add(msgId);
           // Only emit for messages not sent by us (incoming)
-          const fromSelf = msg.from && msg.from.includes(this.inboxEmail);
-          // Block all @agentmail.to senders to prevent bot-to-bot loops
           const fromAddr = (msg.from || '').replace(/.*</, '').replace(/>.*/, '').trim().toLowerCase();
-          const isAgentMail = fromAddr.endsWith('@agentmail.to');
-          if (isAgentMail) {
-            console.log(`[AgentMail] Ignored message from agent address: ${fromAddr}`);
+          const fromSelf = this.inboxEmail && (
+            fromAddr === this.inboxEmail ||
+            fromAddr.includes(this.inboxId?.toLowerCase?.() || '___')
+          );
+          const isExternalAgent = fromAddr.endsWith('@agentmail.to') && !fromSelf;
+
+          if (isExternalAgent) {
+            console.log(`[AgentMail] Ignored message from external agent: ${fromAddr}`);
           }
-          if (!fromSelf && !isAgentMail) {
+
+          if (!fromSelf && !isExternalAgent) {
             // List endpoint may not include body — fetch full message
             let text = msg.text || '';
             if (!text && msg.html) {
@@ -175,6 +200,7 @@ class MailClient extends EventEmitter {
     this.client = null;
     this.inboxId = null;
     this.inboxEmail = null;
+    this._isFirstPoll = true;
   }
 
   getStatus() {

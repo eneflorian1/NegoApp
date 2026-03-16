@@ -108,10 +108,20 @@ class WhatsAppClient extends EventEmitter {
       });
 
       this.client.on('message', async (msg) => {
+        // Skip our own outgoing messages (echoes) and non-chat events
+        if (msg.fromMe) return;
+        if (msg.type !== 'chat' && msg.type !== 'image' && msg.type !== 'video' &&
+            msg.type !== 'audio' && msg.type !== 'document' && msg.type !== 'sticker') {
+          return; // Skip notifications, receipts, e2e_notification, etc.
+        }
+
         let contactName = null;
+        let contactNumber = null;
         try {
           const contact = await msg.getContact();
           contactName = contact.pushname || contact.name || contact.shortName || null;
+          // Extract real phone number (works even for @lid contacts)
+          contactNumber = contact.number || contact.id?.user || null;
         } catch {}
         this.emit('message', {
           from: msg.from,
@@ -119,6 +129,7 @@ class WhatsAppClient extends EventEmitter {
           timestamp: msg.timestamp,
           type: msg.type,
           contactName,
+          contactNumber,
         });
       });
 
