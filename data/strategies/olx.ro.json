@@ -1,0 +1,55 @@
+{
+  "domain": "olx.ro",
+  "version": 1,
+  "lastUpdated": "2026-03-15",
+  "successRate": 0.9858785231759499,
+  "status": "active",
+  "phoneReveal": {
+    "approach": "click_button",
+    "strategies": [
+      {
+        "name": "phones_container_check",
+        "selector": "[data-testid=\"phones-container\"]",
+        "description": "Check if phone is already visible in container"
+      },
+      {
+        "name": "ad_contact_phone",
+        "selector": "button[data-testid=\"ad-contact-phone\"]",
+        "description": "Click 'Suna vanzatorul' button"
+      },
+      {
+        "name": "show_phone",
+        "selector": "button[data-testid=\"show-phone\"]",
+        "description": "Click 'Arata' button in phones container"
+      }
+    ],
+    "resultSelector": "a[href^=\"tel:\"]",
+    "phonePattern": "\\b(0[237][0-9]{1,2}[\\s.-]?[0-9]{3}[\\s.-]?[0-9]{3,4})\\b",
+    "needsVisibleCheck": true,
+    "duplicateButtons": true
+  },
+  "listingSelectors": {
+    "title": "[data-testid=\"offer_title\"]",
+    "price": "[data-testid=\"ad-price-container\"]",
+    "description": "[data-testid=\"ad_description\"]",
+    "sellerName": "[data-testid=\"user-profile-user-name\"]",
+    "location": "[data-testid=\"aside-location-section\"]",
+    "memberSince": "[data-testid=\"member-since\"]",
+    "lastSeen": "[data-testid=\"lastSeenBox\"]"
+  },
+  "categorySelectors": {
+    "listingCard": "[data-testid=\"l-card\"]",
+    "listingLink": "[data-testid=\"l-card\"] a",
+    "nextPage": "[data-testid=\"pagination-forward\"]",
+    "itemsPerPage": 40
+  },
+  "contactMethods": [
+    "in_app_chat",
+    "phone_reveal",
+    "whatsapp_link"
+  ],
+  "rateLimit": {
+    "maxRevealsPerSession": 3,
+    "delayBetweenMs": 45000
+  }
+}
