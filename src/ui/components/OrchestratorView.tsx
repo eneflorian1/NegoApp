@@ -197,7 +197,7 @@ export default function OrchestratorView({ config, tasks, setTasks }: Orchestrat
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="h-full flex flex-col overflow-hidden max-w-4xl mx-auto"
+      className="flex-1 w-full flex flex-col min-h-0 max-w-4xl mx-auto relative"
     >
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pb-4 flex-shrink-0">
@@ -621,18 +621,18 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
         )}
       </AnimatePresence>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder={mode === 'single' ? 'https://www.olx.ro/d/oferta/...' : 'https://www.olx.ro/imobiliare/sibiu/'}
-          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600"
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600"
         />
         <button
           onClick={handleDeploy}
           disabled={!url.trim() || deploying}
-          className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold text-xs transition-all disabled:opacity-40 shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+          className="w-full sm:w-auto shrink-0 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold text-xs transition-all disabled:opacity-40 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
         >
           {deploying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
           Deploy

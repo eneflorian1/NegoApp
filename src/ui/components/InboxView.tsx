@@ -319,6 +319,16 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                   </div>
                 </div>
 
+                {/* Last Message Preview */}
+                {lead.lastMessage && (
+                  <p className={`text-[10px] line-clamp-1 italic leading-relaxed border-l pl-2 ${lead.status === 'accepted' ? 'text-emerald-400/70 border-emerald-500/30' :
+                      lead.status === 'autosend' ? 'text-red-400/70 border-red-500/30' :
+                        'text-zinc-500 border-zinc-800'
+                    }`}>
+                    "{lead.lastMessage}"
+                  </p>
+                )}
+
                 {/* Mini Dashboard per Conversation */}
                 <div className={`flex items-center justify-between rounded-xl p-2 border transition-colors ${lead.status === 'accepted' ? 'bg-emerald-500/10 border-emerald-500/30' :
                     lead.status === 'autosend' ? 'bg-red-500/10 border-red-500/30' :
@@ -377,16 +387,6 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
                       -{parsePrice(lead.initialPrice) - parsePrice(lead.status === 'closed' ? (lead.finalPrice || lead.price) : lead.price)} lei
                     </span>
                   </div>
-                )}
-
-                {/* Last Message Preview */}
-                {lead.lastMessage && (
-                  <p className={`text-[10px] line-clamp-1 italic leading-relaxed border-l pl-2 ${lead.status === 'accepted' ? 'text-emerald-400/70 border-emerald-500/30' :
-                      lead.status === 'autosend' ? 'text-red-400/70 border-red-500/30' :
-                        'text-zinc-500 border-zinc-800'
-                    }`}>
-                    "{lead.lastMessage}"
-                  </p>
                 )}
 
                 {/* Manual mode + unread: urgent attention banner */}

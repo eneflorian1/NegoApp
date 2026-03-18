@@ -170,7 +170,7 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
   ];
 
   return (
-    <div className="flex h-screen bg-[#0A0A0B] text-zinc-100 font-sans overflow-hidden">
+    <div className="flex bg-[#0A0A0B] text-zinc-100 font-sans overflow-hidden" style={{ height: '100dvh' }}>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-64 border-r border-zinc-800 flex-col bg-[#0D0D0E]">
         <div className="p-6 flex items-center gap-3">
@@ -307,8 +307,8 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
           </div>
         </header>
 
-        <div className={`flex-1 ${activeTab === 'orchestrator' ? 'overflow-hidden' : 'overflow-y-auto p-4 lg:p-8 pb-24 lg:pb-12'} custom-scrollbar`}>
-          <div className="h-full p-4 lg:p-8 pb-24 lg:pb-12" style={{ display: activeTab === 'orchestrator' ? 'block' : 'none' }}>
+        <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'orchestrator' ? 'overflow-hidden' : 'overflow-y-auto p-4 lg:p-8 pb-24 lg:pb-12'} custom-scrollbar`}>
+          <div className="w-full flex-1 flex flex-col p-4 lg:p-8 pb-24 lg:pb-12" style={{ display: activeTab === 'orchestrator' ? 'flex' : 'none' }}>
             <OrchestratorView config={config} tasks={tasks} setTasks={setTasks} />
           </div>
           <div style={{ display: activeTab === 'inbox' ? 'block' : 'none' }}>
