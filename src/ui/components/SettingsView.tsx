@@ -30,6 +30,9 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
   const [olxConnecting, setOlxConnecting] = useState(false);
   const [olxStatus, setOlxStatus] = useState<{ valid: boolean; cookieCount?: number; loginDate?: string; expiresAt?: string } | null>(null);
   const [olxError, setOlxError] = useState<string | null>(null);
+  const [olxCookieInput, setOlxCookieInput] = useState('');
+  const [olxImporting, setOlxImporting] = useState(false);
+  const [olxShowImport, setOlxShowImport] = useState(false);
 
   const isFirstRender = React.useRef(true);
 
@@ -195,6 +198,33 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
       setOlxError(err.message || 'Eroare de rețea. Verifică serverul.');
     } finally {
       setOlxConnecting(false);
+    }
+  };
+
+  const handleOlxImport = async () => {
+    if (!olxCookieInput.trim()) return;
+    setOlxImporting(true);
+    setOlxError(null);
+    try {
+      const res = await fetch('/api/session/olx/import', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookies: olxCookieInput.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setOlxError(data.error || 'Import eșuat');
+      } else {
+        const statusRes = await fetch('/api/session/olx/status', { credentials: 'include' });
+        setOlxStatus(await statusRes.json());
+        setOlxCookieInput('');
+        setOlxShowImport(false);
+      }
+    } catch (err: any) {
+      setOlxError(err.message || 'Eroare de rețea.');
+    } finally {
+      setOlxImporting(false);
     }
   };
 
@@ -551,12 +581,12 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 <div>
                   <p className="font-medium text-emerald-400">Authenticated (Persistent Session)</p>
                   <p className="text-xs text-zinc-500">
-                    {olxStatus.cookieCount} cookies active. Logged in: {new Date(olxStatus.loginDate || Date.now()).toLocaleDateString()}
+                    {olxStatus.cookieCount} cookies · {new Date(olxStatus.loginDate || Date.now()).toLocaleDateString()}
                   </p>
                 </div>
               </div>
               <p className="text-[10px] text-zinc-400 max-w-[200px] text-left md:text-right leading-tight">
-                Phone numbers are fully visible for 100% of OLX listings. The system will use this session automatically.
+                100% numere vizibile. Sesiunea este folosită automat.
               </p>
             </div>
           ) : (
@@ -566,9 +596,9 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                   <ShoppingBag className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-zinc-300">Autentificare OLX Required</p>
+                  <p className="font-medium text-zinc-300">Autentificare OLX</p>
                   <p className="text-[11px] text-zinc-500 leading-snug">
-                    Logarea o singură dată este necesară pentru ca scraper-ul să poată extrage 100% din numerele de telefon (altfel OLX ascunde telefoanele la 90% din anunțuri).
+                    Necesară o singură dată pentru extragerea 100% a numerelor de telefon.
                   </p>
                 </div>
               </div>
@@ -580,6 +610,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 </div>
               )}
 
+              {/* ── Method 1: Auto Login ── */}
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-zinc-500 uppercase font-bold">Email Cont OLX</label>
@@ -593,7 +624,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-500 uppercase font-bold">Parolă Cont OLX</label>
+                  <label className="text-xs text-zinc-500 uppercase font-bold">Parolă</label>
                   <input
                     type="password"
                     value={olxPassword}
@@ -604,18 +635,70 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
                   />
                 </div>
-                
                 <button
                   onClick={handleOlxLogin}
                   disabled={olxConnecting || !olxEmail || !olxPassword}
-                  className="w-full py-2.5 mt-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
                 >
                   {olxConnecting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Se deschide un browser pe ecran (maxim 60s)...
-                    </>
-                  ) : 'Login & Salvează Sesiunea'}
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Se autentifică...</>
+                  ) : 'Login Automat'}
                 </button>
+              </div>
+
+              {/* ── Divider ── */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex-1 h-px bg-zinc-800" />
+                <span className="text-[10px] text-zinc-600 uppercase font-bold">sau</span>
+                <div className="flex-1 h-px bg-zinc-800" />
+              </div>
+
+              {/* ── Method 2: Manual Cookie Import ── */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => setOlxShowImport(!olxShowImport)}
+                  className="w-full text-left px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl text-sm text-zinc-400 transition-colors flex items-center justify-between"
+                >
+                  <span>📋 Import manual cookies (dacă login-ul automat nu merge)</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${olxShowImport ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {olxShowImport && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden space-y-3"
+                    >
+                      <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50 space-y-3">
+                        <p className="text-[11px] text-zinc-500 leading-relaxed">
+                          <strong className="text-zinc-400">Pași:</strong><br/>
+                          1. Loghează-te pe <a href="https://www.olx.ro/cont/" target="_blank" rel="noreferrer" className="text-blue-400 underline">olx.ro</a> în browserul tău<br/>
+                          2. Apasă <strong className="text-zinc-400">F12</strong> → tab <strong className="text-zinc-400">Console</strong><br/>
+                          3. Scrie <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-blue-300 text-[10px]">document.cookie</code> și apasă Enter<br/>
+                          4. Copiază tot textul rezultat și lipește-l mai jos
+                        </p>
+                        <textarea
+                          value={olxCookieInput}
+                          onChange={(e) => setOlxCookieInput(e.target.value)}
+                          placeholder='Lipește aici cookie-urile copiate...'
+                          disabled={olxImporting}
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs focus:outline-none focus:border-blue-500 transition-colors min-h-[80px] resize-y font-mono disabled:opacity-50"
+                        />
+                        <button
+                          onClick={handleOlxImport}
+                          disabled={olxImporting || !olxCookieInput.trim()}
+                          className="w-full py-2.5 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-700/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-zinc-200 transition-colors flex items-center justify-center gap-2"
+                        >
+                          {olxImporting ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Se importă...</>
+                          ) : 'Importă Cookies'}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           )}

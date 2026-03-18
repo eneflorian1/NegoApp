@@ -1,6 +1,6 @@
 /**
  * Session Routes — /api/session
- * Manages OLX session login and status
+ * Manages OLX session login, import, and status
  */
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
@@ -10,13 +10,11 @@ export default function createSessionRoutes() {
   const router = Router();
   router.use(requireAuth);
 
-  // Track active login to prevent concurrent logins
   let loginInProgress = false;
 
   /**
    * POST /api/session/olx/login
    * Body: { email, password }
-   * Triggers OLX login and saves session cookies
    */
   router.post('/session/olx/login', async (req, res) => {
     const { email, password } = req.body;
@@ -42,8 +40,26 @@ export default function createSessionRoutes() {
   });
 
   /**
+   * POST /api/session/olx/import
+   * Body: { cookies: "cookie string or JSON array" }
+   * Manual cookie import from user's browser
+   */
+  router.post('/session/olx/import', (req, res) => {
+    const { cookies } = req.body;
+    if (!cookies || typeof cookies !== 'string' || cookies.trim().length === 0) {
+      return res.status(400).json({ error: 'Cookie string is required' });
+    }
+
+    try {
+      const result = OlxSession.importCookies(cookies);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
    * GET /api/session/olx/status
-   * Returns session validity info
    */
   router.get('/session/olx/status', (req, res) => {
     const status = OlxSession.isValid();
