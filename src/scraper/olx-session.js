@@ -44,9 +44,9 @@ class OlxSession {
       console.log('[OlxSession] Launching browser for login...');
       await browser.launch(null, { headless: 'new' });
 
-      // Navigate directly to login.olx.ro
+      // Navigate back to olx.ro/cont/ which generates tokens and redirects to login.olx.ro automatically
       console.log('[OlxSession] Navigating to OLX login page...');
-      await browser.page.goto('https://login.olx.ro/', {
+      await browser.page.goto('https://www.olx.ro/cont/', {
         waitUntil: 'networkidle2',
         timeout: 30000,
       });
@@ -182,6 +182,16 @@ class OlxSession {
 
     } catch (error) {
       console.error(`[OlxSession] Login failed: ${error.message}`);
+      if (browser && browser.page) {
+        try {
+          // Take screenshot to understand why it failed (e.g. Cloudflare block)
+          const errImgPath = join(DATA_DIR, `olx_fatal_error_${Date.now()}.png`);
+          await browser.page.screenshot({ path: errImgPath, fullPage: true });
+          console.error(`[OlxSession] Eroare fatală. Screenshot salvat la: ${errImgPath}`);
+        } catch (screenshotError) {
+          console.error('[OlxSession] Nu am putut face screenshot-ul de eroare', screenshotError);
+        }
+      }
       return { success: false, cookieCount: 0, error: error.message };
     } finally {
       await browser.close();
