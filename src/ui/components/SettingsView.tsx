@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Settings, Zap, Phone, Mail, CheckCircle2, MessageSquare, TrendingUp, AlertCircle, Loader2, QrCode, Wifi, WifiOff, ChevronDown, RefreshCcw, Plus, Trash2, Pencil, X, Check } from 'lucide-react';
+import { Settings, Zap, Phone, Mail, CheckCircle2, MessageSquare, TrendingUp, AlertCircle, Loader2, QrCode, Wifi, WifiOff, ChevronDown, RefreshCcw, Plus, Trash2, Pencil, X, Check, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Config, ServiceStatus, CustomScenario } from '../types';
 import { SCENARIOS } from '../constants/scenarios';
@@ -23,6 +23,14 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
   const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
   const [newScenarioName, setNewScenarioName] = useState('');
   const [showAddScenario, setShowAddScenario] = useState(false);
+  
+  // OLX Session States
+  const [olxEmail, setOlxEmail] = useState('');
+  const [olxPassword, setOlxPassword] = useState('');
+  const [olxConnecting, setOlxConnecting] = useState(false);
+  const [olxStatus, setOlxStatus] = useState<{ valid: boolean; cookieCount?: number; loginDate?: string; expiresAt?: string } | null>(null);
+  const [olxError, setOlxError] = useState<string | null>(null);
+
   const isFirstRender = React.useRef(true);
 
   // Merge default scenarios with user custom scenarios
@@ -80,6 +88,14 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     }, 2000);
     return () => clearInterval(interval);
   }, [waConnecting, waPairCode]);
+
+  // Load OLX Status
+  useEffect(() => {
+    fetch('/api/session/olx/status', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setOlxStatus(data))
+      .catch(() => {});
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -147,6 +163,38 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
       setWaError('Network error requesting pairing code');
     } finally {
       setWaPairing(false);
+    }
+  };
+
+  const handleOlxLogin = async () => {
+    if (!olxEmail || !olxPassword) {
+      setOlxError('Completează adresa de email și parola');
+      return;
+    }
+    setOlxConnecting(true);
+    setOlxError(null);
+    try {
+      const res = await fetch('/api/session/olx/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: olxEmail, password: olxPassword })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setOlxError(data.error || 'Autentificare eșuată');
+      } else {
+        // Refresh status
+        const statusRes = await fetch('/api/session/olx/status', { credentials: 'include' });
+        const statusData = await statusRes.json();
+        setOlxStatus(statusData);
+        setOlxEmail('');
+        setOlxPassword('');
+      }
+    } catch (err: any) {
+      setOlxError(err.message || 'Eroare de rețea. Verifică serverul.');
+    } finally {
+      setOlxConnecting(false);
     }
   };
 
@@ -452,6 +500,91 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
               </button>
             </div>
           </div>
+        </section>
+        {/* ── OLX Integration ── */}
+        <section className="space-y-4">
+          <h3 className="text-lg font-medium flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-blue-400" /> OLX Integration
+            <div className={`ml-auto w-2.5 h-2.5 rounded-full ${olxStatus?.valid ? 'bg-emerald-500 animate-pulse' : olxConnecting ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
+          </h3>
+
+          {olxStatus?.valid ? (
+            <div className="p-6 bg-zinc-800/30 rounded-2xl border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="font-medium text-emerald-400">Authenticated (Persistent Session)</p>
+                  <p className="text-xs text-zinc-500">
+                    {olxStatus.cookieCount} cookies active. Logged in: {new Date(olxStatus.loginDate || Date.now()).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[10px] text-zinc-400 max-w-[200px] text-left md:text-right leading-tight">
+                Phone numbers are fully visible for 100% of OLX listings. The system will use this session automatically.
+              </p>
+            </div>
+          ) : (
+            <div className="p-6 bg-zinc-800/30 rounded-2xl border border-zinc-800/50 space-y-4">
+              <div className="flex items-start gap-4 mb-2">
+                <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                  <ShoppingBag className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-zinc-300">Autentificare OLX Required</p>
+                  <p className="text-[11px] text-zinc-500 leading-snug">
+                    Logarea o singură dată este necesară pentru ca scraper-ul să poată extrage 100% din numerele de telefon (altfel OLX ascunde telefoanele la 90% din anunțuri).
+                  </p>
+                </div>
+              </div>
+
+              {olxError && (
+                <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <p className="text-[11px] text-red-400">{olxError}</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-zinc-500 uppercase font-bold">Email Cont OLX</label>
+                  <input
+                    type="email"
+                    value={olxEmail}
+                    onChange={(e) => setOlxEmail(e.target.value)}
+                    placeholder="email@example.com"
+                    disabled={olxConnecting}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-500 uppercase font-bold">Parolă Cont OLX</label>
+                  <input
+                    type="password"
+                    value={olxPassword}
+                    onChange={(e) => setOlxPassword(e.target.value)}
+                    placeholder="••••••••"
+                    disabled={olxConnecting}
+                    onKeyDown={(e) => e.key === 'Enter' && handleOlxLogin()}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleOlxLogin}
+                  disabled={olxConnecting || !olxEmail || !olxPassword}
+                  className="w-full py-2.5 mt-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+                >
+                  {olxConnecting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Se loghează (durează 10-15s)...
+                    </>
+                  ) : 'Login & Salvează Sesiunea'}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ── Custom Scenarios ── */}
