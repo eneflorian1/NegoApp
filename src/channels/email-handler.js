@@ -83,7 +83,7 @@ async function handleIncomingEmail(msg, agentmail, gemini) {
       if (analysis?.status === 'accepted') {
         lead.status = 'accepted';
         lead.isBotActive = false;
-        if (analysis.currentPrice) lead.finalPrice = `${Number(analysis.currentPrice)} lei`;
+        if (analysis.currentPrice) lead.finalPrice = lead.price;
         console.log(`[AgentMail] CONSENSUS REACHED for ${lead.id} at ${lead.price} — bot deactivated`);
         LeadRepo.save();
         return;
