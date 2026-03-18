@@ -286,13 +286,27 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
           <div className="flex items-center gap-3">
             {/* WhatsApp LED */}
             <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${serviceStatus.whatsapp.connected ? 'bg-emerald-500 animate-pulse' : serviceStatus.whatsapp.initializing ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
-              <span className={`text-[10px] font-medium hidden sm:inline ${serviceStatus.whatsapp.connected ? 'text-emerald-500' : serviceStatus.whatsapp.initializing ? 'text-amber-500' : 'text-red-500'}`}>WA</span>
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${serviceStatus.whatsapp.connected ? 'bg-emerald-500 animate-pulse' : serviceStatus.whatsapp.initializing ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className={`text-[10px] font-medium ${serviceStatus.whatsapp.connected ? 'text-emerald-500' : serviceStatus.whatsapp.initializing ? 'text-amber-500' : 'text-red-500'}`}>
+                <span className="sm:hidden">W</span>
+                <span className="hidden sm:inline">WA</span>
+              </span>
             </div>
             {/* AgentMail LED */}
             <div className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${serviceStatus.agentmail.connected ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
-              <span className={`text-[10px] font-medium hidden sm:inline ${serviceStatus.agentmail.connected ? 'text-emerald-500' : 'text-zinc-500'}`}>Mail</span>
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${serviceStatus.agentmail.connected ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
+              <span className={`text-[10px] font-medium ${serviceStatus.agentmail.connected ? 'text-emerald-500' : 'text-zinc-500'}`}>
+                <span className="sm:hidden">M</span>
+                <span className="hidden sm:inline">Mail</span>
+              </span>
+            </div>
+            {/* Gemini LED */}
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${config.geminiApiKey ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className={`text-[10px] font-medium ${config.geminiApiKey ? 'text-emerald-500' : 'text-red-500'}`}>
+                <span className="sm:hidden">G</span>
+                <span className="hidden sm:inline">Gemini</span>
+              </span>
             </div>
             {/* Username badge */}
             <div className="hidden sm:flex items-center gap-1.5 bg-zinc-800/60 px-2.5 py-1 rounded-lg">

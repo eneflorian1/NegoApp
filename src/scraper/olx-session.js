@@ -40,8 +40,8 @@ class OlxSession {
 
     const browser = new StealthBrowser();
     try {
-      console.log('[OlxSession] Launching browser for login...');
-      await browser.launch(null, { headless: 'new' });
+      console.log('[OlxSession] Launching visible browser for login (allows manual Captcha solving)...');
+      await browser.launch(null, { headless: false });
 
       // Navigate to login page
       console.log('[OlxSession] Navigating to OLX login page...');
@@ -77,31 +77,42 @@ class OlxSession {
       await browser.page.type(SELECTORS.passwordInput, password, { delay: 80 + Math.random() * 60 });
       await sleep(500, 1000);
 
-      // Click login button
+      // Click login button via JS to avoid overlay intercepts
       console.log('[OlxSession] Submitting login...');
-      await browser.page.click(SELECTORS.loginButton);
+      await browser.page.evaluate((sel) => {
+        const btn = document.querySelector(sel);
+        if (btn) btn.click();
+      }, SELECTORS.loginButton);
 
-      // Wait for navigation (successful login redirects away from /cont/)
-      try {
-        await browser.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
-      } catch (e) {
-        // May not navigate — check if we're still on the login page
+      console.log('[OlxSession] Waiting up to 60 seconds for successful redirect (user can solve CAPTCHA manually)...');
+      
+      // Wait for URL to change away from login page (polling)
+      let isStillOnLogin = true;
+      let errorText = null;
+      let waited = 0;
+      
+      while (waited < 60000) {
+        await sleep(2000);
+        waited += 2000;
+        
+        const currentUrl = browser.page.url();
+        isStillOnLogin = currentUrl.includes('/cont/') || currentUrl.includes('/login');
+        
+        if (!isStillOnLogin) break; // Success, redirected!
+
+        // Check for error messages dynamically
+        errorText = await browser.page.evaluate(() => {
+          const errorEls = document.querySelectorAll('[class*="error"], [class*="Error"], [role="alert"], [data-testid="error"]');
+          for (const el of errorEls) {
+            const text = el.textContent.trim();
+            // Ignore generic cookie consent texts
+            if (text.length > 0 && text.length < 150 && !text.includes('cookie')) return text;
+          }
+          return null;
+        });
+
+        if (errorText) break; // Found an error, stop waiting
       }
-      await sleep(2000, 3000);
-
-      // Check if login was successful
-      const currentUrl = browser.page.url();
-      const isStillOnLogin = currentUrl.includes('/cont/') || currentUrl.includes('/login');
-
-      // Also check for error messages on the page
-      const errorText = await browser.page.evaluate(() => {
-        const errorEls = document.querySelectorAll('[class*="error"], [class*="Error"], [role="alert"]');
-        for (const el of errorEls) {
-          const text = el.textContent.trim();
-          if (text.length > 0 && text.length < 200) return text;
-        }
-        return null;
-      });
 
       if (errorText) {
         console.error(`[OlxSession] Login error: ${errorText}`);
@@ -109,14 +120,8 @@ class OlxSession {
       }
 
       if (isStillOnLogin) {
-        // Could be a CAPTCHA or slow redirect — try waiting more
-        await sleep(3000, 5000);
-        const urlAfterWait = browser.page.url();
-        if (urlAfterWait.includes('/cont/') || urlAfterWait.includes('/login')) {
-          console.error('[OlxSession] Login failed — still on login page');
-          await browser.screenshot(join(__dirname, '..', '..', 'data', 'olx_login_failed.png'));
-          return { success: false, cookieCount: 0, error: 'Login failed - still on login page (possible CAPTCHA or wrong credentials)' };
-        }
+        console.error('[OlxSession] Login failed — timeout. Still on login page.');
+        return { success: false, cookieCount: 0, error: 'Login timeout - posibill CAPTCHA nerezolvat la timp sau altă eroare.' };
       }
 
       // Extract and save cookies

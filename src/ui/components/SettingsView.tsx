@@ -578,7 +578,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 >
                   {olxConnecting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Se loghează (durează 10-15s)...
+                      <Loader2 className="w-4 h-4 animate-spin" /> Se deschide un browser pe ecran (maxim 60s)...
                     </>
                   ) : 'Login & Salvează Sesiunea'}
                 </button>
