@@ -47,6 +47,32 @@ export default function OrchestratorView({ config, tasks, setTasks }: Orchestrat
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
+  // Check for Web Share Target parameters (Android generic Share)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const title = params.get('title') || '';
+      const text = params.get('text') || '';
+      const urlParam = params.get('url') || '';
+      
+      const combined = `${title} ${text} ${urlParam}`;
+      const urlMatch = combined.match(/(https?:\/\/[^\s]+)/);
+      
+      if (urlMatch) {
+        const extractedUrl = urlMatch[0];
+        if (extractedUrl.includes('olx.ro')) {
+          // Clear URL so refreshing doesn't do it again
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          // Schedule auto-send
+          setTimeout(() => {
+            quickSend(extractedUrl);
+          }, 800);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   // Poll active missions for updates
   useEffect(() => {
     pollRef.current = setInterval(async () => {

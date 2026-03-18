@@ -19,6 +19,15 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#ffffff',
+        share_target: {
+          action: "/",
+          method: "GET",
+          params: {
+            title: "title",
+            text: "text",
+            url: "url"
+          }
+        },
         icons: [
           {
             src: '/icons/icon-192x192.svg',
