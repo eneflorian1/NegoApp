@@ -162,10 +162,28 @@ class WhatsAppClient extends EventEmitter {
   }
 
   async requestPairingCode(phoneNumber) {
-    return {
-      status: 'error',
-      error: 'Pairing code is not supported. Please scan the QR code to connect.',
-    };
+    if (!this.client) {
+      return { status: 'error', error: 'WhatsApp not initialized. Press Connect first.' };
+    }
+    if (this.isConnected) {
+      return { status: 'error', error: 'Already connected.' };
+    }
+    try {
+      // Clean phone: digits only, no + or spaces
+      const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+      if (cleanPhone.length < 10) {
+        return { status: 'error', error: 'Invalid phone number. Use international format (e.g. 407XXXXXXXX).' };
+      }
+      console.log(`[WhatsApp:${this.userId}] Requesting pairing code for ${cleanPhone}...`);
+      const code = await this.client.requestPairingCode(cleanPhone);
+      this.pairingCode = code;
+      this.qrCodeData = null; // Hide QR when using pairing code
+      console.log(`[WhatsApp:${this.userId}] Pairing code received: ${code}`);
+      return { status: 'success', code };
+    } catch (err) {
+      console.error(`[WhatsApp:${this.userId}] Pairing code error:`, err.message);
+      return { status: 'error', error: err.message };
+    }
   }
 
   async sendMessage(chatIdOrPhone, message) {
