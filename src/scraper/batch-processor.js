@@ -211,6 +211,16 @@ class BatchProcessor extends EventEmitter {
             total: totalToProcess,
             item,
           });
+
+          if (batchOptions.onItemSuccess) {
+            try {
+              console.log(`[Batch] Running onItemSuccess callback for ${revealResult.phone}...`);
+              await batchOptions.onItemSuccess(item);
+              console.log(`[Batch] onItemSuccess callback finished.`);
+            } catch (cbErr) {
+              console.error(`[Batch] onItemSuccess callback error: ${cbErr.message}`);
+            }
+          }
         } else {
           const failItem = {
             url: listing.url,

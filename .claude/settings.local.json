@@ -15,7 +15,22 @@
       "mcp__Context7__get-library-docs",
       "Bash(npx vite:*)",
       "Bash(npx tsc:*)",
-      "Bash(node -c server.js)"
+      "Bash(node -c server.js)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"import\\(''@whiskeysockets/baileys''\\).then\\(m => console.log\\(Object.keys\\(m\\).filter\\(k => /make|Socket|Auth|Disconnect|version|fetch/i.test\\(k\\)\\).join\\(''\\\\n''\\)\\)\\)\")",
+      "Bash(timeout 15 node server.js)",
+      "Bash(timeout 10 node \"C:/Users/Admin/Documents/GitHub/NegoApp/server.js\")",
+      "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp/src/db -type f -name *.js)",
+      "Bash(grep -r \"writeFileSync\\\\|writeFile\" /c/Users/Admin/Documents/GitHub/NegoApp/src --include=*.js)",
+      "Bash(grep -r \"leads\\\\.json\\\\|messages\\\\.json\\\\|config\\\\.json\\\\|missions\\\\.json\" /c/Users/Admin/Documents/GitHub/NegoApp/src --include=*.js)",
+      "Bash(grep -r \"data/leads\\\\|data/messages\\\\|data/config\\\\|data/missions\" /c/Users/Admin/Documents/GitHub/NegoApp/src --include=*.js)",
+      "Bash(wc -l /c/Users/Admin/Documents/GitHub/NegoApp/data/*.json)",
+      "Bash(grep -rn \"LeadRepo\\\\.save\\\\|MessageRepo\\\\.save\\\\|ConfigRepo\\\\.save\\\\|MissionRepo\\\\.save\" /c/Users/Admin/Documents/GitHub/NegoApp/src --include=*.js)",
+      "Bash(node -e \"const p = require\\('C:/Users/Admin/Documents/GitHub/NegoApp/node_modules/puppeteer/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node --check server.js src/routes/config.routes.js src/routes/leads.routes.js src/routes/chat.routes.js src/routes/mission.routes.js src/core/contact-service.js)",
+      "Bash(node --check src/channels/whatsapp-handler.js src/core/contact-service.js src/routes/leads.routes.js)",
+      "Bash(node:*)",
+      "Bash(curl:*)"
     ]
   }
 }

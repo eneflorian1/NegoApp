@@ -8,7 +8,8 @@ import {
   Settings,
   Menu,
   X,
-  ShoppingBag
+  ShoppingBag,
+  LogOut,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AnimatePresence } from 'motion/react';
@@ -22,9 +23,56 @@ import DatabaseView from './components/DatabaseView';
 import LeadsView from './components/LeadsView';
 import SettingsView from './components/SettingsView';
 import OffersView from './components/OffersView';
+import LoginView from './components/LoginView';
+
+interface AuthUser {
+  id: string;
+  username: string;
+}
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'orchestrator' | 'leads' | 'database' | 'offers' | 'settings'>('orchestrator');
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Check if already logged in on mount
+  useEffect(() => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.id) setUser({ id: data.id, username: data.username });
+      })
+      .catch(() => {})
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    setUser(null);
+  };
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0B] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginView onLogin={setUser} />;
+  }
+
+  return <AppContent user={user} onLogout={handleLogout} />;
+}
+
+function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+  const [activeTab, setActiveTabState] = useState<'dashboard' | 'inbox' | 'orchestrator' | 'leads' | 'database' | 'offers' | 'settings'>(
+    () => (sessionStorage.getItem('activeTab') as any) || 'orchestrator'
+  );
+  const setActiveTab = (tab: typeof activeTab) => {
+    sessionStorage.setItem('activeTab', tab);
+    setActiveTabState(tab);
+  };
   const [leads, setLeads] = useState<Lead[]>([]);
   const [marketStats] = useState<MarketStats[]>(MOCK_MARKET_STATS);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -34,17 +82,36 @@ export default function App() {
     whatsapp: { connected: false, initializing: false, phone: null, name: null, hasQR: false, error: null },
     agentmail: { connected: false, error: null },
   });
+  const [config, setConfig] = useState<Config>({
+    geminiApiKey: '',
+    agentMailApiKey: '',
+    whatsappConnected: true,
+    autoPilotEnabled: false,
+    requestLocationConfirmation: true,
+    meetingAddress: '',
+    autosendAddress: false,
+    defaultPersonality: 'diplomat',
+    whatsappSystemPrompt: "Ești o persoană reală care vorbește pe WhatsApp cu o cunoștință.\n\nREGULI:\n- Răspunde cât mai natural, scurt și la obiect\n- Folosește un ton relaxat, prietenos\n- Nu menționa sub nicio formă că ești o inteligență artificială\n- Răspunde în limba în care ești abordat\n- Negociază prețuri cu diplomație și răbdare",
+    emailSystemPrompt: "Ești un agent AI expert în negociere și cumpărare de produse/servicii.\n\nOBIECTIVE:\n- Negociază prețuri mai mici cu diplomație\n- Fii politicos dar ferm în negociere\n- Propune contra-oferte rezonabile (10-25% reducere)\n- Răspunde în limba în care ești abordat\n- Menține un ton profesional dar prietenos",
+    whatsappScenario: 'universal',
+    emailScenario: 'universal',
+    yoloDefaults: {
+      autoNegThreshold: 10,
+      modaExcludedBrands: 'Zara, H&M',
+      electroniceMinWarrantyMonths: 12
+    }
+  });
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   const toggleBotActive = async (leadId: string) => {
     const lead = leads.find(l => l.id === leadId);
     if (!lead) return;
     const updated = !lead.isBotActive;
-    setLeads(prev => prev.map(l =>
-      l.id === leadId ? { ...l, isBotActive: updated } : l
-    ));
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, isBotActive: updated } : l));
     try {
       await fetch(`/api/leads/${leadId}`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isBotActive: updated }),
       });
@@ -55,62 +122,37 @@ export default function App() {
     setLeads(prev => prev.filter(l => l.id !== leadId));
     if (selectedLeadId === leadId) setSelectedLeadId('');
     try {
-      await fetch(`/api/leads/${leadId}`, { method: 'DELETE' });
+      await fetch(`/api/leads/${leadId}`, { method: 'DELETE', credentials: 'include' });
     } catch { /* ignore */ }
   };
 
-  // Fetch leads from server with polling
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const res = await fetch('/api/leads');
-        const data = await res.json();
-        setLeads(data);
+        const res = await fetch('/api/leads', { credentials: 'include' });
+        if (res.ok) setLeads(await res.json());
       } catch { /* ignore */ }
     };
     fetchLeads();
     const interval = setInterval(fetchLeads, 5000);
     return () => clearInterval(interval);
   }, []);
-  const [config, setConfig] = useState<Config>({
-    geminiApiKey: '',
-    agentMailApiKey: '',
-    whatsappConnected: true,
-    autoPilotEnabled: false,
-    requestLocationConfirmation: true,
-    meetingAddress: 'Piata Unirii, Bucuresti',
-    autosendAddress: false,
-    defaultPersonality: 'diplomat',
-    whatsappSystemPrompt: '',
-    emailSystemPrompt: '',
-    yoloDefaults: {
-      autoNegThreshold: 10,
-      modaExcludedBrands: 'Zara, H&M',
-      electroniceMinWarrantyMonths: 12
-    }
-  });
 
-  const [configLoaded, setConfigLoaded] = useState(false);
-
-  // Load config from server on mount
   useEffect(() => {
-    fetch('/api/config').then(r => r.json()).then(saved => {
-      if (saved && Object.keys(saved).length > 0) {
-        setConfig(prev => ({ ...prev, ...saved }));
-      }
-      setConfigLoaded(true);
-    }).catch(() => {
-      setConfigLoaded(false);
-    });
+    fetch('/api/config', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(saved => {
+        if (saved && Object.keys(saved).length > 0) setConfig(prev => ({ ...prev, ...saved }));
+        setConfigLoaded(true);
+      })
+      .catch(() => setConfigLoaded(false));
   }, []);
 
-  // Poll service status every 5s
   useEffect(() => {
     const poll = async () => {
       try {
-        const res = await fetch('/api/services/status');
-        const data = await res.json();
-        setServiceStatus(data);
+        const res = await fetch('/api/services/status', { credentials: 'include' });
+        if (res.ok) setServiceStatus(await res.json());
       } catch { /* ignore */ }
     };
     poll();
@@ -150,16 +192,23 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-zinc-800">
+        <div className="p-4 border-t border-zinc-800 space-y-1">
           <button
             onClick={() => setActiveTab('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'settings'
-                ? 'bg-indigo-600/10 text-indigo-400 font-medium'
-                : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50'
-              }`}
+              ? 'bg-indigo-600/10 text-indigo-400 font-medium'
+              : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50'
+            }`}
           >
             <Settings className="w-5 h-5" />
             <span>Settings</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-sm">{user.username}</span>
           </button>
         </div>
       </aside>
@@ -204,17 +253,23 @@ export default function App() {
                   />
                 ))}
               </nav>
-
-              <div className="p-4 border-t border-zinc-800">
+              <div className="p-4 border-t border-zinc-800 space-y-1">
                 <button
                   onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'settings'
-                      ? 'bg-indigo-600/10 text-indigo-400 font-medium'
-                      : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50'
-                    }`}
+                    ? 'bg-indigo-600/10 text-indigo-400 font-medium'
+                    : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50'
+                  }`}
                 >
                   <Settings className="w-5 h-5" />
                   <span>Settings</span>
+                </button>
+                <button
+                  onClick={onLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="text-sm">{user.username}</span>
                 </button>
               </div>
             </motion.aside>
@@ -235,27 +290,24 @@ export default function App() {
             <h1 className="text-lg font-bold">{navItems.find(n => n.id === activeTab)?.label || 'Settings'}</h1>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3">
-              {/* WhatsApp LED */}
-              <div className="flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full ${serviceStatus.whatsapp.connected ? 'bg-emerald-500 animate-pulse' : serviceStatus.whatsapp.initializing ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
-                <span className={`text-[10px] font-medium hidden sm:inline ${serviceStatus.whatsapp.connected ? 'text-emerald-500' : serviceStatus.whatsapp.initializing ? 'text-amber-500' : 'text-red-500'}`}>
-                  WA
-                </span>
-              </div>
-              {/* AgentMail LED */}
-              <div className="flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full ${serviceStatus.agentmail.connected ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
-                <span className={`text-[10px] font-medium hidden sm:inline ${serviceStatus.agentmail.connected ? 'text-emerald-500' : 'text-zinc-500'}`}>
-                  Mail
-                </span>
-              </div>
+            {/* WhatsApp LED */}
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${serviceStatus.whatsapp.connected ? 'bg-emerald-500 animate-pulse' : serviceStatus.whatsapp.initializing ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className={`text-[10px] font-medium hidden sm:inline ${serviceStatus.whatsapp.connected ? 'text-emerald-500' : serviceStatus.whatsapp.initializing ? 'text-amber-500' : 'text-red-500'}`}>WA</span>
+            </div>
+            {/* AgentMail LED */}
+            <div className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${serviceStatus.agentmail.connected ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-600'}`} />
+              <span className={`text-[10px] font-medium hidden sm:inline ${serviceStatus.agentmail.connected ? 'text-emerald-500' : 'text-zinc-500'}`}>Mail</span>
+            </div>
+            {/* Username badge */}
+            <div className="hidden sm:flex items-center gap-1.5 bg-zinc-800/60 px-2.5 py-1 rounded-lg">
+              <span className="text-[11px] text-zinc-400">{user.username}</span>
             </div>
           </div>
         </header>
 
         <div className={`flex-1 ${activeTab === 'orchestrator' ? 'overflow-hidden' : 'overflow-y-auto p-4 lg:p-8 pb-24 lg:pb-12'} custom-scrollbar`}>
-          {/* Always-mounted views — prevents state loss (polling, results) on tab switch */}
           <div className="h-full p-4 lg:p-8 pb-24 lg:pb-12" style={{ display: activeTab === 'orchestrator' ? 'block' : 'none' }}>
             <OrchestratorView config={config} tasks={tasks} setTasks={setTasks} />
           </div>
@@ -289,8 +341,7 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
-              className={`flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-indigo-400' : 'text-zinc-500'
-                }`}
+              className={`flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-indigo-400' : 'text-zinc-500'}`}
             >
               <div className={`p-2 rounded-xl transition-colors ${activeTab === item.id ? 'bg-indigo-600/10' : ''}`}>
                 {item.icon}
@@ -309,9 +360,9 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active
-          ? 'bg-indigo-600/10 text-indigo-400 font-medium'
-          : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50'
-        }`}
+        ? 'bg-indigo-600/10 text-indigo-400 font-medium'
+        : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50'
+      }`}
     >
       {icon}
       <span>{label}</span>

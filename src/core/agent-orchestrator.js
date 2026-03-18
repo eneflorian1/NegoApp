@@ -177,18 +177,10 @@ class AgentOrchestrator {
         this._emit('mission:updated', mission);
       });
 
-      // Forward successful reveals instantly
-      batchProcessor.on('batch:item_success', async (data) => {
-        if (onPhoneRevealed) {
-          try {
-            await onPhoneRevealed(data.item);
-          } catch (err) {
-            console.error(`[Orchestrator] Error in onPhoneRevealed callback: ${err.message}`);
-          }
-        }
+      const batchResult = await batchProcessor.process(toReveal, {
+        domain,
+        onItemSuccess: onPhoneRevealed
       });
-
-      const batchResult = await batchProcessor.process(toReveal, domain);
 
       // BatchProcessor doesn't return a .phones root array, it returns .completed objects
       const phones = batchResult.completed.map(r => r.phone).filter(Boolean);
@@ -218,9 +210,9 @@ class AgentOrchestrator {
       mission.summary = {
         domain,
         listingsFound: listings.length,
-        phonesRevealed: batchResult.phones.length,
-        successRate: batchResult.successRate,
-        phones: batchResult.phones,
+        phonesRevealed: phones.length,
+        successRate,
+        phones,
         topListings: listings.slice(0, 10).map(l => ({
           title: l.title,
           price: l.price,
@@ -230,7 +222,7 @@ class AgentOrchestrator {
       };
 
       this._step(mission, 'complete',
-        `Mission complete: ${listings.length} listings, ${batchResult.phones.length} phones, ${batchResult.successRate}% success rate`
+        `Mission complete: ${listings.length} listings, ${phones.length} phones, ${successRate}% success rate`
       );
 
       this._emit('mission:completed', mission);

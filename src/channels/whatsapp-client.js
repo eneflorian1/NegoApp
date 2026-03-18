@@ -1,8 +1,6 @@
 /**
- * WhatsApp Client — Real implementation using whatsapp-web.js
- * 
- * Handles WhatsApp connectivity via QR code authentication.
- * Session persisted in data/.wwebjs_auth/
+ * WhatsApp Client — uses whatsapp-web.js (Puppeteer/Chrome)
+ * Supports per-user auth paths for multi-user isolation.
  */
 import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
@@ -10,34 +8,39 @@ import QRCode from 'qrcode';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { EventEmitter } from 'events';
+import { existsSync, rmSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const AUTH_PATH = join(__dirname, '..', '..', 'data', '.wwebjs_auth');
+const AUTH_BASE = join(__dirname, '..', '..', 'data', '.wwebjs_auth');
+
+/** Check if a saved LocalAuth session exists for a userId */
+function hasAuthenticatedSession(userId = 'default') {
+  const sessionDir = join(AUTH_BASE, userId, 'session');
+  return existsSync(sessionDir);
+}
 
 class WhatsAppClient extends EventEmitter {
-  constructor() {
+  constructor(userId = 'default') {
     super();
+    this.userId = userId;
+    this.authPath = join(AUTH_BASE, userId);
     this.client = null;
     this.isConnected = false;
     this.isInitializing = false;
-    this.qrCodeData = null;   // base64 PNG
+    this.qrCodeData = null;
     this.sessionInfo = null;
     this.lastError = null;
+    this.pairingCode = null;
 
-    // Prevent unhandled 'error' events from crashing the process
     this.on('error', (err) => {
-      console.error('[WhatsApp] Unhandled error:', err.message);
+      console.error(`[WhatsApp:${userId}] Unhandled error:`, err.message);
     });
   }
 
-  /**
-   * Initialize WhatsApp connection — generates QR code for scanning
-   */
   async connect() {
     if (this.isConnected) return { status: 'already_connected' };
     if (this.isInitializing) return { status: 'initializing' };
 
-    // Clean up any previous failed client
     if (this.client) {
       try { await this.client.destroy(); } catch {}
       this.client = null;
@@ -49,31 +52,40 @@ class WhatsAppClient extends EventEmitter {
 
     try {
       this.client = new Client({
-        authStrategy: new LocalAuth({ dataPath: AUTH_PATH }),
+        authStrategy: new LocalAuth({ dataPath: this.authPath }),
         puppeteer: {
           headless: true,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
             '--disable-gpu',
-            '--disable-features=site-per-process',
+            '--disable-extensions',
           ],
         },
       });
 
       this.client.on('qr', async (qr) => {
-        console.log('[WhatsApp] QR code received');
+        console.log(`[WhatsApp:${this.userId}] QR code received`);
         try {
-          this.qrCodeData = await QRCode.toDataURL(qr, { width: 256 });
+          this.qrCodeData = await QRCode.toDataURL(qr, { width: 512, margin: 2 });
           this.emit('qr', this.qrCodeData);
         } catch (err) {
-          console.error('[WhatsApp] QR generation error:', err.message);
+          console.error(`[WhatsApp:${this.userId}] QR generation error:`, err.message);
         }
       });
 
+      this.client.on('authenticated', () => {
+        console.log(`[WhatsApp:${this.userId}] Session authenticated`);
+        this.qrCodeData = null;
+        this.emit('authenticated');
+      });
+
       this.client.on('ready', () => {
-        console.log('[WhatsApp] Client ready!');
+        console.log(`[WhatsApp:${this.userId}] Client ready!`);
         this.isConnected = true;
         this.isInitializing = false;
         this.qrCodeData = null;
@@ -82,50 +94,49 @@ class WhatsAppClient extends EventEmitter {
         this.sessionInfo = {
           phone: info?.wid?.user || null,
           name: info?.pushname || null,
-          platform: info?.platform || null,
+          platform: 'whatsapp-web.js',
         };
+
+        this.emit('authenticated');
         this.emit('ready', this.sessionInfo);
       });
 
-      this.client.on('authenticated', () => {
-        console.log('[WhatsApp] Authenticated');
-        this.emit('authenticated');
-      });
-
       this.client.on('auth_failure', (msg) => {
-        console.error('[WhatsApp] Auth failure:', msg);
-        this.lastError = `Authentication failed: ${msg}`;
+        console.error(`[WhatsApp:${this.userId}] Auth failure:`, msg);
+        this.isConnected = false;
         this.isInitializing = false;
+        this.lastError = `Auth failed: ${msg}. Please reconnect.`;
+        this.client = null;
+        try { rmSync(this.authPath, { recursive: true, force: true }); } catch {}
         this.emit('auth_failure', msg);
       });
 
       this.client.on('disconnected', (reason) => {
-        console.log('[WhatsApp] Disconnected:', reason);
+        console.log(`[WhatsApp:${this.userId}] Disconnected:`, reason);
         this.isConnected = false;
+        this.isInitializing = false;
         this.sessionInfo = null;
         this.qrCodeData = null;
+        this.lastError = null;
+        this.client = null;
         this.emit('disconnected', reason);
       });
 
       this.client.on('message', async (msg) => {
-        // Skip our own outgoing messages (echoes) and non-chat events
         if (msg.fromMe) return;
-        if (msg.type !== 'chat' && msg.type !== 'image' && msg.type !== 'video' &&
-            msg.type !== 'audio' && msg.type !== 'document' && msg.type !== 'sticker') {
-          return; // Skip notifications, receipts, e2e_notification, etc.
-        }
+        if (!msg.body && msg.type === 'chat') return;
 
         let contactName = null;
         let contactNumber = null;
         try {
           const contact = await msg.getContact();
-          contactName = contact.pushname || contact.name || contact.shortName || null;
-          // Extract real phone number (works even for @lid contacts)
-          contactNumber = contact.number || contact.id?.user || null;
-        } catch {}
+          contactName = contact.pushname || contact.name || null;
+          contactNumber = contact.number || null;
+        } catch { /* ignore */ }
+
         this.emit('message', {
           from: msg.from,
-          body: msg.body,
+          body: msg.body || '',
           timestamp: msg.timestamp,
           type: msg.type,
           contactName,
@@ -133,77 +144,69 @@ class WhatsAppClient extends EventEmitter {
         });
       });
 
-      // Fire-and-forget: don't block the HTTP response waiting for QR/auth
-      this.client.initialize().catch(async (err) => {
+      console.log(`[WhatsApp:${this.userId}] Starting Chrome...`);
+      this.client.initialize().catch((err) => {
+        console.error(`[WhatsApp:${this.userId}] Initialize error:`, err.message);
         this.isInitializing = false;
         this.lastError = err.message;
-        console.error('[WhatsApp] Initialize error:', err.message);
-        // Clean up failed client so retry is possible
-        try { await this.client.destroy(); } catch {}
         this.client = null;
-        this.emit('error', err);
       });
 
       return { status: 'initializing' };
     } catch (err) {
       this.isInitializing = false;
       this.lastError = err.message;
-      console.error('[WhatsApp] Connect error:', err.message);
+      console.error(`[WhatsApp:${this.userId}] Connect error:`, err.message);
       return { status: 'error', error: err.message };
     }
   }
 
-  /**
-   * Send a message to a phone number or WhatsApp chat ID
-   * If chatIdOrPhone contains '@', it's used as-is (e.g. 12345@lid)
-   * Otherwise digits are extracted and @c.us is appended
-   */
+  async requestPairingCode(phoneNumber) {
+    return {
+      status: 'error',
+      error: 'Pairing code is not supported. Please scan the QR code to connect.',
+    };
+  }
+
   async sendMessage(chatIdOrPhone, message) {
     if (!this.isConnected || !this.client) {
-      throw new Error('WhatsApp not connected. Please scan QR code first.');
+      throw new Error('WhatsApp not connected. Please authenticate first.');
     }
 
-    const chatId = chatIdOrPhone.includes('@')
-      ? chatIdOrPhone
-      : chatIdOrPhone.replace(/[^0-9]/g, '') + '@c.us';
+    let chatId;
+    if (chatIdOrPhone.includes('@')) {
+      chatId = chatIdOrPhone.replace('@s.whatsapp.net', '@c.us');
+    } else {
+      chatId = chatIdOrPhone.replace(/[^0-9]/g, '') + '@c.us';
+    }
+
     const result = await this.client.sendMessage(chatId, message);
 
     return {
       status: 'sent',
-      messageId: result.id?.id || `wa-${Date.now()}`,
+      messageId: result?.id?._serialized || `wa-${Date.now()}`,
       to: chatIdOrPhone,
       timestamp: Date.now(),
     };
   }
 
-  /**
-   * Disconnect WhatsApp session
-   */
   async disconnect() {
     if (this.client) {
-      try {
-        await this.client.destroy();
-      } catch (err) {
-        console.error('[WhatsApp] Destroy error:', err.message);
-      }
+      try { await this.client.logout(); } catch {}
+      try { await this.client.destroy(); } catch {}
     }
+    try { rmSync(this.authPath, { recursive: true, force: true }); } catch {}
+
     this.isConnected = false;
     this.isInitializing = false;
     this.sessionInfo = null;
     this.qrCodeData = null;
+    this.pairingCode = null;
     this.client = null;
   }
 
-  /**
-   * Get current QR code as base64 data URL
-   */
-  getQR() {
-    return this.qrCodeData;
-  }
+  getQR() { return this.qrCodeData; }
 
-  /**
-   * Get connection status
-   */
   getStatus() {
     return {
       connected: this.isConnected,
@@ -211,9 +214,13 @@ class WhatsAppClient extends EventEmitter {
       phone: this.sessionInfo?.phone || null,
       name: this.sessionInfo?.name || null,
       hasQR: !!this.qrCodeData,
+      pairingCode: this.pairingCode || null,
       error: this.lastError,
+      clientExists: !!this.client,
+      timestamp: Date.now(),
     };
   }
 }
 
 export default WhatsAppClient;
+export { hasAuthenticatedSession };

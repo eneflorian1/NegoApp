@@ -353,5 +353,23 @@
     "channel": "whatsapp",
     "lastMessage": "Înțeleg perfect, doamnă Viorica. Chiar îmi pare rău că am insistat. Vă mulțumesc mult pentru timpul dumneavoastră și vă doresc și dumneavoastră o seară minunată!",
     "lastContacted": "2026-03-16T16:59:25.742Z"
+  },
+  {
+    "id": "lead-1773691133556-x919am",
+    "createdAt": "2026-03-16T19:58:53.556Z",
+    "url": "https://www.olx.ro/d/oferta/rolex-day-date-36-mm-IDk8iU3.html?search_reason=search%7Corganic",
+    "title": "Rolex Day-Date 36 mm",
+    "initialPrice": "9 500 €",
+    "price": "9 500 €",
+    "sellerName": "Vitali",
+    "phoneNumber": "0741300467",
+    "isSaved": false,
+    "status": "contacted",
+    "platform": "olx",
+    "isBotActive": true,
+    "channel": "whatsapp",
+    "lastContacted": "2026-03-16T19:58:54.680Z",
+    "lastMessage": "Bună ziua, domnule Vitali, sunt interesat de Rolex-ul Day-Date 36mm. Aș dori să știu dacă prețul de 9.500 € este negociabil.",
+    "whatsappId": "40741300467@c.us"
   }
 ]

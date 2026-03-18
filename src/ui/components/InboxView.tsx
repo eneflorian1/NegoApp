@@ -150,7 +150,7 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
   const handleSend = async () => {
     if (!messageText.trim() || !selectedLead) return;
     try {
-      await fetch('/api/messages/send', {
+      await fetch('/api/messages/send', { credentials: 'include', 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

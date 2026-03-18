@@ -1348,5 +1348,14 @@
     "timestamp": "2026-03-16T17:37:19.000Z",
     "channel": "whatsapp",
     "from": "189790360219676@lid"
+  },
+  {
+    "id": "whatsapp-out-1773691134678-zkd3sb",
+    "timestamp": "2026-03-16T19:58:54.678Z",
+    "leadId": "lead-1773691133556-x919am",
+    "sender": "me",
+    "text": "Bună ziua, domnule Vitali, sunt interesat de Rolex-ul Day-Date 36mm. Aș dori să știu dacă prețul de 9.500 € este negociabil.",
+    "channel": "whatsapp",
+    "to": "40741300467@c.us"
   }
 ]

@@ -1,8 +1,8 @@
 /**
- * Lead Repository — JSON-based lead persistence
- * Wraps an in-memory array backed by data/leads.json.
+ * Lead Repository — MongoDB-backed with in-memory cache, per-user isolation
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import mongoose from 'mongoose';
+import { readFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,47 +10,84 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', '..', '..', 'data');
 const LEADS_FILE = join(DATA_DIR, 'leads.json');
 
-if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+// ─── Mongoose Schema ────────────────────────────────────────────────────────
+const leadSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true, index: true },
+  userId: { type: String, index: true },
+  url: String,
+  title: String,
+  initialPrice: String,
+  price: String,
+  sellerName: String,
+  phoneNumber: String,
+  whatsappId: String,
+  isSaved: Boolean,
+  status: { type: String, index: true },
+  platform: String,
+  isBotActive: Boolean,
+  channel: String,
+  lastMessage: String,
+  lastContacted: String,
+  finalPrice: String,
+  createdAt: String,
+}, { strict: false, timestamps: false });
 
-/** Internal array — single source of truth */
+const LeadModel = mongoose.model('Lead', leadSchema);
+
+// ─── In-memory cache ────────────────────────────────────────────────────────
 let leads = [];
 
+function persistAll() {
+  const ops = leads.map(l => ({
+    updateOne: {
+      filter: { id: l.id },
+      update: { $set: l },
+      upsert: true,
+    }
+  }));
+  if (ops.length === 0) return;
+  LeadModel.bulkWrite(ops).catch(err => console.error('[LeadRepo] persistAll failed:', err.message));
+}
+
 const LeadRepo = {
-  /** Load leads from disk into memory. Call once at startup. */
-  init() {
-    if (!existsSync(LEADS_FILE)) { leads = []; return leads; }
+  async init() {
     try {
-      leads = JSON.parse(readFileSync(LEADS_FILE, 'utf-8'));
-    } catch { leads = []; }
+      const docs = await LeadModel.find({}).lean();
+      if (docs.length > 0) {
+        leads = docs.map(d => { const { _id, __v, ...rest } = d; return rest; });
+      } else if (existsSync(LEADS_FILE)) {
+        try {
+          const fileData = JSON.parse(readFileSync(LEADS_FILE, 'utf-8'));
+          if (Array.isArray(fileData) && fileData.length > 0) {
+            leads = fileData;
+            console.log(`[LeadRepo] Seeding ${leads.length} leads from leads.json`);
+            await LeadModel.insertMany(leads, { ordered: false }).catch(() => {});
+          }
+        } catch { leads = []; }
+      }
+    } catch (err) {
+      console.error('[LeadRepo] init failed:', err.message);
+      if (existsSync(LEADS_FILE)) {
+        try { leads = JSON.parse(readFileSync(LEADS_FILE, 'utf-8')); } catch { leads = []; }
+      }
+    }
     return leads;
   },
 
-  /** Persist current state to disk */
-  save() {
-    writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
+  save() { persistAll(); },
+
+  /** Get all leads for a user */
+  getAll(userId) {
+    if (!userId) return leads;
+    return leads.filter(l => l.userId === userId);
   },
 
-  /** Get all leads (returns live array reference) */
-  getAll() {
-    return leads;
-  },
+  findById(id) { return leads.find(l => l.id === id); },
 
-  /** Find lead by id */
-  findById(id) {
-    return leads.find(l => l.id === id);
-  },
+  find(predicate) { return leads.find(predicate); },
 
-  /** Find lead by predicate */
-  find(predicate) {
-    return leads.find(predicate);
-  },
+  findIndex(id) { return leads.findIndex(l => l.id === id); },
 
-  /** Find lead index by id */
-  findIndex(id) {
-    return leads.findIndex(l => l.id === id);
-  },
-
-  /** Create a new lead, push to array and save */
   create(data) {
     const lead = {
       id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
@@ -58,37 +95,30 @@ const LeadRepo = {
       ...data,
     };
     leads.push(lead);
-    this.save();
+    LeadModel.create(lead).catch(err => console.error('[LeadRepo] create failed:', err.message));
     return lead;
   },
 
-  /** Update a lead by id (partial update, merge fields) */
   update(id, data) {
     const idx = leads.findIndex(l => l.id === id);
     if (idx === -1) return null;
     leads[idx] = { ...leads[idx], ...data };
-    this.save();
+    LeadModel.updateOne({ id }, { $set: leads[idx] }, { upsert: true })
+      .catch(err => console.error('[LeadRepo] update failed:', err.message));
     return leads[idx];
   },
 
-  /** Delete a lead by id */
   delete(id) {
     const idx = leads.findIndex(l => l.id === id);
     if (idx === -1) return false;
     leads.splice(idx, 1);
-    this.save();
+    LeadModel.deleteOne({ id }).catch(err => console.error('[LeadRepo] delete failed:', err.message));
     return true;
   },
 
-  /** Push to array without saving (for batch operations) */
-  push(lead) {
-    leads.push(lead);
-  },
+  push(lead) { leads.push(lead); },
 
-  /** Number of leads */
-  get count() {
-    return leads.length;
-  },
+  get count() { return leads.length; },
 };
 
 export default LeadRepo;

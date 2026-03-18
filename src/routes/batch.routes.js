@@ -3,10 +3,13 @@
  */
 import { Router } from 'express';
 import BatchProcessor from '../scraper/batch-processor.js';
+import { requireAuth } from '../middleware/auth.js';
 
 export default function createBatchRoutes({ proxyManager, domainStrategy }) {
   const router = Router();
   const activeBatch = { processor: null, running: false };
+
+  router.use(requireAuth);
 
   router.post('/batch/start', async (req, res) => {
     const {

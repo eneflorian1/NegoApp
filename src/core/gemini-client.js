@@ -36,10 +36,27 @@ class GeminiClient {
   }
 
   /**
+   * Return a scoped client that uses a specific API key (for per-user isolation).
+   * The returned object inherits all methods but overrides key resolution.
+   */
+  forKey(keyOrFn) {
+    const wrapper = Object.create(this);
+    if (typeof keyOrFn === 'function') {
+      wrapper._getKey = () => {
+        const k = keyOrFn();
+        return (k && k.length > 5) ? k : this._getKey();
+      };
+    } else {
+      wrapper._getKey = () => (keyOrFn && keyOrFn.length > 5) ? keyOrFn : this._getKey();
+    }
+    return wrapper;
+  }
+
+  /**
    * Send a prompt to Gemini and get a response
    */
   async generate(prompt, options = {}) {
-    const apiKey = this._getKey();
+    const apiKey = options.apiKey || this._getKey();
     if (!apiKey) {
       throw new Error('Gemini API key not configured. Set it in Settings.');
     }

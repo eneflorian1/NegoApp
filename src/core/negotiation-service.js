@@ -31,6 +31,7 @@ Pret initial al anuntului: ${lead.initialPrice || 'necunoscut'}
 Raspunde cu JSON-ul:
 {
   "currentPrice": <ultimul pret discutat/agreat ca numar, sau null daca nu s-a discutat pret>,
+  "currency": "<moneda discutata (ex: EUR, LEI, RON, USD), sau null daca nu se stie>",
   "status": "<una din: negotiating, accepted, contacted>",
   "reason": "<explicatie scurta>"
 }
@@ -56,7 +57,15 @@ Reguli:
  */
 export function updatePriceFromAnalysis(lead, analysis) {
   if (!analysis?.currentPrice || isNaN(Number(analysis.currentPrice))) return false;
-  const newPrice = `${Number(analysis.currentPrice)} lei`;
+  
+  const getExistingCurrency = (priceStr) => {
+    if (!priceStr) return 'lei';
+    const match = String(priceStr).match(/(€|lei|RON|EUR|USD|\$|£)/i);
+    return match ? match[1] : 'lei';
+  };
+  
+  const currency = analysis.currency || getExistingCurrency(lead.price || lead.initialPrice);
+  const newPrice = `${Number(analysis.currentPrice)} ${currency}`.trim();
   if (lead.price === newPrice) return false;
 
   lead.price = newPrice;

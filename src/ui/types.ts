@@ -60,6 +60,14 @@ export interface MarketStats {
   lastUpdated: string;
 }
 
+export interface CustomScenario {
+  id: string;
+  label: string;
+  icon: string;
+  whatsappPrompt: string;
+  emailPrompt: string;
+}
+
 export interface Config {
   geminiApiKey: string;
   agentMailApiKey: string;
@@ -71,6 +79,9 @@ export interface Config {
   defaultPersonality: 'shark' | 'diplomat' | 'ghost';
   whatsappSystemPrompt: string;
   emailSystemPrompt: string;
+  whatsappScenario?: string;
+  emailScenario?: string;
+  customScenarios?: CustomScenario[];
   yoloDefaults: {
     autoNegThreshold: number;
     modaExcludedBrands: string;

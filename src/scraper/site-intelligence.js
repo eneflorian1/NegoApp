@@ -67,12 +67,9 @@ class SiteIntelligence {
     // Check cache first
     if (!options.forceRediscover) {
       const cached = this.domainStrategy.load(domain);
-      if (cached && cached.status !== 'degraded') {
-        console.log(`[Intelligence] Using cached strategy for ${domain}`);
+      if (cached) {
+        console.log(`[Intelligence] Using cached strategy for ${domain} (skipping analysis for known site)`);
         return cached;
-      }
-      if (cached?.status === 'degraded') {
-        console.log(`[Intelligence] Strategy for ${domain} is degraded — re-discovering`);
       }
     }
 

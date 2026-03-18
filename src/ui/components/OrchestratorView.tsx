@@ -51,7 +51,7 @@ export default function OrchestratorView({ config, tasks, setTasks }: Orchestrat
   useEffect(() => {
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch('/api/missions');
+        const res = await fetch('/api/missions', { credentials: 'include' });
         const data = await res.json();
         const running = data.filter((m: any) => m.status === 'running');
         setActiveMissions(running);
@@ -125,7 +125,7 @@ export default function OrchestratorView({ config, tasks, setTasks }: Orchestrat
     setIsTyping(true);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/chat', { credentials: 'include', 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, personality }),
@@ -497,7 +497,7 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
     // Category mode → direct API call with filter params
     setDeploying(true);
     try {
-      const res = await fetch('/api/orchestrate/full', {
+      const res = await fetch('/api/orchestrate/full', { credentials: 'include', 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

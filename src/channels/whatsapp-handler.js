@@ -1,6 +1,5 @@
 /**
- * WhatsApp Message Handler — extracted from server.js
- * Handles incoming WhatsApp messages: lead creation, bot negotiation, auto-reply.
+ * WhatsApp Message Handler — per-user isolation via userId closure
  */
 import LeadRepo from '../db/models/Lead.js';
 import MessageRepo from '../db/models/Message.js';
@@ -9,31 +8,33 @@ import { stripWhatsAppId, normalizePhone, formatPhoneDisplay, findLeadByPhone } 
 import { isBotSuspicion, analyzeConversation, updatePriceFromAnalysis, generateReply } from '../core/negotiation-service.js';
 
 /**
- * Wire up WhatsApp event handlers.
+ * Wire up WhatsApp event handlers for a specific user.
  * @param {WhatsAppClient} whatsapp
  * @param {GeminiClient} gemini
+ * @param {string} userId
  */
-export function setupWhatsAppHandler(whatsapp, gemini) {
+export function setupWhatsAppHandler(whatsapp, gemini, userId) {
+  // Create a user-scoped gemini that uses this user's API key
+  const userGemini = gemini.forKey(() => ConfigRepo.get(userId, 'geminiApiKey'));
+
   whatsapp.on('ready', (info) => {
     const displayName = info.name && info.name !== '.' ? info.name : 'Account';
-    console.log(`[WhatsApp] Connected as ${displayName} (${info.phone})`);
-    setTimeout(() => processUnansweredMessages(whatsapp, gemini), 3000);
+    console.log(`[WhatsApp:${userId}] Connected as ${displayName} (${info.phone})`);
+    setTimeout(() => processUnansweredMessages(userId, whatsapp, userGemini), 3000);
   });
 
   whatsapp.on('disconnected', (reason) => {
-    console.log(`[WhatsApp] Disconnected: ${reason}`);
+    console.log(`[WhatsApp:${userId}] Disconnected: ${reason}`);
   });
 
   whatsapp.on('message', async (msg) => {
-    await handleIncomingMessage(msg, whatsapp, gemini);
+    await handleIncomingMessage(msg, userId, whatsapp, userGemini);
   });
 }
 
-/** Handle a single incoming WhatsApp message */
-async function handleIncomingMessage(msg, whatsapp, gemini) {
-  // EARLY EXIT: Ignore empty messages
+async function handleIncomingMessage(msg, userId, whatsapp, gemini) {
   if (!msg.body || msg.body.trim().length === 0) {
-    console.log(`[WhatsApp] Ignoring empty message from ${msg.from} (type: ${msg.type})`);
+    console.log(`[WhatsApp:${userId}] Ignoring empty message from ${msg.from}`);
     return;
   }
 
@@ -44,14 +45,16 @@ async function handleIncomingMessage(msg, whatsapp, gemini) {
     || (realPhone ? formatPhoneDisplay(realPhone) : null)
     || (isLid ? `Contact ${cleanPhone.slice(-4)}` : cleanPhone);
 
-  // Find or create lead
-  let lead = findLeadByPhone(msg.from);
+  // Find or create lead for this user
+  let lead = LeadRepo.getAll(userId).find(l => l.whatsappId === msg.from);
   if (!lead && realPhone) {
-    lead = LeadRepo.find(l => normalizePhone(l.phoneNumber) === normalizePhone(realPhone));
+    lead = LeadRepo.getAll(userId).find(l => normalizePhone(l.phoneNumber) === normalizePhone(realPhone));
   }
 
   if (!lead) {
+    const cfg0 = ConfigRepo.load(userId);
     lead = LeadRepo.create({
+      userId,
       url: '',
       title: 'WhatsApp Conversation',
       initialPrice: '',
@@ -61,31 +64,30 @@ async function handleIncomingMessage(msg, whatsapp, gemini) {
       whatsappId: msg.from,
       isSaved: false,
       status: 'new',
-      platform: 'olx',
+      platform: 'whatsapp',
       isBotActive: true,
       channel: 'whatsapp',
+      // Freeze system prompt at conversation start
+      systemPrompt: cfg0.whatsappSystemPrompt || '',
     });
-    console.log(`[WhatsApp] New lead created for ${displayName} (${cleanPhone})`);
+    console.log(`[WhatsApp:${userId}] New lead created for ${displayName} (${cleanPhone})`);
   } else {
     let needsSave = false;
-    // Ensure whatsappId is stored
     if (!lead.whatsappId) { lead.whatsappId = msg.from; needsSave = true; }
-    // Update sellerName if better name available
     const currentNameIsRawId = /^\d{10,}$/.test(lead.sellerName);
     if (msg.contactName && (lead.sellerName === lead.phoneNumber || currentNameIsRawId)) {
       lead.sellerName = msg.contactName; needsSave = true;
     } else if (currentNameIsRawId && realPhone) {
       lead.sellerName = formatPhoneDisplay(realPhone); needsSave = true;
     }
-    // Update phoneNumber if real phone available
     if (realPhone && /^\d{12,}$/.test(lead.phoneNumber) && lead.phoneNumber !== realPhone) {
       lead.phoneNumber = realPhone; needsSave = true;
     }
     if (needsSave) LeadRepo.save();
   }
 
-  // Store incoming message
   MessageRepo.create({
+    userId,
     leadId: lead.id,
     sender: 'seller',
     text: msg.body,
@@ -97,62 +99,52 @@ async function handleIncomingMessage(msg, whatsapp, gemini) {
   lead.lastMessage = msg.body;
   LeadRepo.save();
 
-  console.log(`[WhatsApp] Incoming message from ${displayName}: "${msg.body.substring(0, 50)}"`);
+  console.log(`[WhatsApp:${userId}] Incoming from ${displayName}: "${msg.body.substring(0, 50)}"`);
 
-  // Bot suspicion detection
   if (isBotSuspicion(msg.body)) {
-    console.log(`[WhatsApp] ⚠️ BOT SUSPICION detected from ${displayName}: "${msg.body}"`);
+    console.log(`[WhatsApp:${userId}] BOT SUSPICION from ${displayName}`);
     lead.isBotActive = false;
     lead.lastMessage = `⚠️ ALERTĂ: Vânzătorul suspectează bot! Mesaj: "${msg.body}"`;
     LeadRepo.save();
     return;
   }
 
-  console.log(`[WhatsApp] Auto-reply check: botActive=${lead.isBotActive}, geminiAvailable=${gemini.isAvailable}, whatsappId=${lead.whatsappId}`);
-
-  // Auto-reply if bot is active
   if (lead.isBotActive && gemini.isAvailable) {
     try {
-      const cfg = ConfigRepo.load();
+      const cfg = ConfigRepo.load(userId);
       const leadMessages = MessageRepo.getByLeadId(lead.id);
 
-      // Analyze conversation
       const analysis = await analyzeConversation(gemini, leadMessages, lead);
-      if (analysis) console.log(`[WhatsApp] Pre-reply analysis for ${lead.id}:`, analysis);
+      if (analysis) console.log(`[WhatsApp:${userId}] Pre-reply analysis:`, analysis);
 
-      // Update price
       if (updatePriceFromAnalysis(lead, analysis)) {
-        console.log(`[WhatsApp] Price updated for ${lead.id}: ${lead.price}`);
+        console.log(`[WhatsApp:${userId}] Price updated for ${lead.id}: ${lead.price}`);
       }
 
-      // Update status
       if (analysis?.status === 'negotiating' && (lead.status === 'contacted' || lead.status === 'new')) {
         lead.status = 'negotiating';
         LeadRepo.save();
       }
 
-      // If consensus reached, stop bot
       if (analysis?.status === 'accepted') {
         lead.status = 'accepted';
         lead.isBotActive = false;
-        if (analysis.currentPrice) lead.finalPrice = `${Number(analysis.currentPrice)} lei`;
-        console.log(`[WhatsApp] CONSENSUS REACHED for ${lead.id} at ${lead.price} — bot deactivated`);
+        if (analysis.currentPrice) lead.finalPrice = lead.price;
+        console.log(`[WhatsApp:${userId}] CONSENSUS REACHED for ${lead.id}`);
 
         if (cfg.autosendAddress && cfg.meetingAddress) {
           const addressMsg = `Mulțumesc pentru înțelegere! Ne putem întâlni la: ${cfg.meetingAddress}. Vă convine?`;
           await whatsapp.sendMessage(lead.whatsappId || msg.from, addressMsg);
-          MessageRepo.create({ leadId: lead.id, sender: 'me', text: addressMsg, channel: 'whatsapp', to: msg.from });
+          MessageRepo.create({ userId, leadId: lead.id, sender: 'me', text: addressMsg, channel: 'whatsapp', to: msg.from });
           lead.status = 'autosend';
           lead.lastMessage = addressMsg;
-          console.log(`[WhatsApp] Auto-sent address to ${msg.from}: ${cfg.meetingAddress}`);
         }
         LeadRepo.save();
         return;
       }
 
-      // Generate and send reply
       const replyText = await generateReply(gemini, {
-        systemPrompt: cfg.whatsappSystemPrompt,
+        systemPrompt: lead.systemPrompt || cfg.whatsappSystemPrompt,
         lead,
         messages: leadMessages,
         channel: 'whatsapp',
@@ -160,24 +152,23 @@ async function handleIncomingMessage(msg, whatsapp, gemini) {
 
       if (replyText) {
         await whatsapp.sendMessage(lead.whatsappId || msg.from, replyText);
-        MessageRepo.create({ leadId: lead.id, sender: 'me', text: replyText, channel: 'whatsapp', to: msg.from });
+        MessageRepo.create({ userId, leadId: lead.id, sender: 'me', text: replyText, channel: 'whatsapp', to: msg.from });
         lead.lastMessage = replyText;
         lead.lastContacted = new Date().toISOString();
         if (lead.status === 'new') lead.status = 'contacted';
         LeadRepo.save();
-        console.log(`[WhatsApp] Auto-reply sent to ${msg.from}: "${replyText.substring(0, 50)}..."`);
+        console.log(`[WhatsApp:${userId}] Auto-reply sent: "${replyText.substring(0, 50)}..."`);
       }
     } catch (err) {
-      console.error(`[WhatsApp] Auto-reply failed for ${msg.from}:`, err.message);
+      console.error(`[WhatsApp:${userId}] Auto-reply failed:`, err.message);
     }
   }
 }
 
-/** Process unanswered messages after WhatsApp restart */
-async function processUnansweredMessages(whatsapp, gemini) {
+async function processUnansweredMessages(userId, whatsapp, gemini) {
   if (!whatsapp.isConnected || !gemini.isAvailable) return;
 
-  const allMessages = MessageRepo.getAll();
+  const allMessages = MessageRepo.getAll(userId);
   const leadIds = [...new Set(allMessages.filter(m => m.leadId).map(m => m.leadId))];
   const unanswered = [];
 
@@ -186,18 +177,15 @@ async function processUnansweredMessages(whatsapp, gemini) {
     const lastMsg = leadMsgs[leadMsgs.length - 1];
     if (lastMsg && lastMsg.sender === 'seller' && lastMsg.text && lastMsg.text.trim()) {
       const lead = LeadRepo.findById(leadId);
-      if (lead && lead.isBotActive) {
+      if (lead && lead.isBotActive && lead.userId === userId) {
         unanswered.push({ lead, lastMsg });
       }
     }
   }
 
-  if (unanswered.length === 0) {
-    console.log('[WhatsApp] No unanswered messages to process after restart.');
-    return;
-  }
+  if (unanswered.length === 0) return;
 
-  console.log(`[WhatsApp] Found ${unanswered.length} unanswered message(s) after restart. Processing...`);
+  console.log(`[WhatsApp:${userId}] Found ${unanswered.length} unanswered message(s) after restart.`);
 
   for (const { lead, lastMsg } of unanswered) {
     try {
@@ -205,31 +193,25 @@ async function processUnansweredMessages(whatsapp, gemini) {
         lead.isBotActive = false;
         lead.lastMessage = `⚠️ ALERTĂ: Vânzătorul suspectează bot! Mesaj: "${lastMsg.text}"`;
         LeadRepo.save();
-        console.log(`[WhatsApp] ⚠️ BOT SUSPICION in unanswered for ${lead.sellerName}, skipping`);
         continue;
       }
 
-      if (lead.status === 'accepted' || lead.status === 'autosend') {
-        console.log(`[WhatsApp] Skipping unanswered for ${lead.sellerName} — already ${lead.status}`);
-        continue;
-      }
+      if (lead.status === 'accepted' || lead.status === 'autosend') continue;
 
-      const cfg = ConfigRepo.load();
+      const cfg = ConfigRepo.load(userId);
       const leadMessages = MessageRepo.getByLeadId(lead.id);
 
-      // Analyze
       const analysis = await analyzeConversation(gemini, leadMessages, lead);
       updatePriceFromAnalysis(lead, analysis);
 
-      // If accepted
       if (analysis?.status === 'accepted') {
         lead.status = 'accepted';
         lead.isBotActive = false;
-        if (analysis.currentPrice) lead.finalPrice = `${Number(analysis.currentPrice)} lei`;
+        if (analysis.currentPrice) lead.finalPrice = lead.price;
         if (cfg.autosendAddress && cfg.meetingAddress) {
           const addressMsg = `Mulțumesc pentru înțelegere! Ne putem întâlni la: ${cfg.meetingAddress}. Vă convine?`;
           await whatsapp.sendMessage(lead.whatsappId || lastMsg.from, addressMsg);
-          MessageRepo.create({ leadId: lead.id, sender: 'me', text: addressMsg, channel: 'whatsapp', to: lead.whatsappId || lastMsg.from });
+          MessageRepo.create({ userId, leadId: lead.id, sender: 'me', text: addressMsg, channel: 'whatsapp', to: lead.whatsappId || lastMsg.from });
           lead.status = 'autosend';
           lead.lastMessage = addressMsg;
         }
@@ -241,9 +223,8 @@ async function processUnansweredMessages(whatsapp, gemini) {
         lead.status = 'negotiating';
       }
 
-      // Generate reply
       const replyText = await generateReply(gemini, {
-        systemPrompt: cfg.whatsappSystemPrompt,
+        systemPrompt: lead.systemPrompt || cfg.whatsappSystemPrompt,
         lead,
         messages: leadMessages,
         channel: 'whatsapp',
@@ -251,15 +232,14 @@ async function processUnansweredMessages(whatsapp, gemini) {
 
       if (replyText) {
         await whatsapp.sendMessage(lead.whatsappId || lastMsg.from, replyText);
-        MessageRepo.create({ leadId: lead.id, sender: 'me', text: replyText, channel: 'whatsapp', to: lead.whatsappId || lastMsg.from });
+        MessageRepo.create({ userId, leadId: lead.id, sender: 'me', text: replyText, channel: 'whatsapp', to: lead.whatsappId || lastMsg.from });
         lead.lastMessage = replyText;
         if (lead.status === 'new') lead.status = 'contacted';
         lead.lastContacted = new Date().toISOString();
         LeadRepo.save();
-        console.log(`[WhatsApp] Retry auto-reply sent to ${lead.sellerName}: "${replyText.substring(0, 50)}..."`);
       }
     } catch (err) {
-      console.error(`[WhatsApp] Retry auto-reply failed for ${lead.sellerName}:`, err.message);
+      console.error(`[WhatsApp:${userId}] Retry reply failed:`, err.message);
     }
   }
 }

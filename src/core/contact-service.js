@@ -1,6 +1,5 @@
 /**
- * Contact Service — auto-contact seller after phone reveal
- * Extracted from server.js autoContactSeller().
+ * Contact Service — auto-contact seller after phone reveal (per-user)
  */
 import LeadRepo from '../db/models/Lead.js';
 import MessageRepo from '../db/models/Message.js';
@@ -11,17 +10,15 @@ import { generateFirstMessage } from './negotiation-service.js';
 
 /**
  * Auto-contact a seller after a successful phone reveal.
- * Creates a lead, generates a first message via Gemini, and sends via WhatsApp.
  * @param {object} result - reveal result with { phone, listing, url }
- * @param {object} deps - { gemini, whatsapp }
- * @returns {object|null} lead
+ * @param {object} deps - { gemini, whatsapp, userId }
  */
-export async function autoContactSeller(result, { gemini, whatsapp }) {
-  if (!result.phone) return null;
+export async function autoContactSeller(result, { gemini, whatsapp, userId }) {
+  if (!result.phone || !userId) return null;
 
-  const cfg = ConfigRepo.load();
+  const cfg = ConfigRepo.load(userId);
   if (!cfg.autoPilotEnabled) {
-    console.log('[AutoContact] AutoPilot disabled, skipping auto-contact');
+    console.log(`[AutoContact:${userId}] AutoPilot disabled, skipping`);
     return null;
   }
 
@@ -32,16 +29,16 @@ export async function autoContactSeller(result, { gemini, whatsapp }) {
   const sellerName = listing.sellerName || phone;
   const url = result.url || '';
 
-  // Check if lead already exists for this phone
-  const leads = LeadRepo.getAll();
-  let lead = leads.find(l => normalizePhone(l.phoneNumber) === normalizePhone(phone));
+  // Check if lead already exists for this user + phone
+  const userLeads = LeadRepo.getAll(userId);
+  let lead = userLeads.find(l => normalizePhone(l.phoneNumber) === normalizePhone(phone));
   if (lead) {
-    console.log(`[AutoContact] Lead already exists for ${phone}, skipping`);
+    console.log(`[AutoContact:${userId}] Lead already exists for ${phone}`);
     return lead;
   }
 
-  // Create lead
   lead = LeadRepo.create({
+    userId,
     url,
     title,
     initialPrice: price,
@@ -53,37 +50,49 @@ export async function autoContactSeller(result, { gemini, whatsapp }) {
     platform: 'olx',
     isBotActive: true,
     channel: 'whatsapp',
+    // Freeze the system prompt at conversation start time
+    systemPrompt: cfg.whatsappSystemPrompt || '',
   });
-  console.log(`[AutoContact] Lead created: ${lead.id} — ${sellerName} (${phone})`);
+  console.log(`[AutoContact:${userId}] Lead created: ${lead.id} — ${sellerName} (${phone})`);
 
-  // Generate first message using Gemini
-  if (!gemini.isAvailable) {
-    console.log('[AutoContact] Gemini not available, lead created but no message sent');
+  // Use user-scoped gemini key
+  const userGemini = gemini.forKey(cfg.geminiApiKey);
+  if (!userGemini.isAvailable) {
+    console.log(`[AutoContact:${userId}] Gemini not available, lead created but no message sent`);
     return lead;
   }
 
   try {
-    const replyText = await generateFirstMessage(gemini, {
+    const replyText = await generateFirstMessage(userGemini, {
       systemPrompt: cfg.whatsappSystemPrompt,
       lead: { ...lead },
     });
 
     if (!replyText) {
-      console.log('[AutoContact] Gemini returned empty response');
+      console.log(`[AutoContact:${userId}] Gemini returned empty response`);
       return lead;
     }
 
-    // Send via WhatsApp
-    if (!whatsapp.isConnected) {
-      console.log('[AutoContact] WhatsApp not connected, lead created but message not sent');
+    const waConnected = typeof whatsapp.isConnected === 'function'
+      ? whatsapp.isConnected(userId)
+      : whatsapp.isConnected;
+
+    if (!waConnected) {
+      console.log(`[AutoContact:${userId}] WhatsApp not connected`);
       return lead;
     }
 
     const waId = phoneToWhatsAppId(phone);
-    await whatsapp.sendMessage(waId, replyText);
+    if (typeof whatsapp.sendMessage === 'function' && whatsapp.clients) {
+      // WhatsAppManager
+      await whatsapp.sendMessage(userId, waId, replyText);
+    } else {
+      // Direct WhatsAppClient
+      await whatsapp.sendMessage(waId, replyText);
+    }
 
-    // Store outgoing message
     MessageRepo.create({
+      userId,
       leadId: lead.id,
       sender: 'me',
       text: replyText,
@@ -91,17 +100,16 @@ export async function autoContactSeller(result, { gemini, whatsapp }) {
       to: waId,
     });
 
-    // Update lead
     lead.status = 'contacted';
     lead.lastContacted = new Date().toISOString();
     lead.lastMessage = replyText;
     lead.whatsappId = waId;
     LeadRepo.save();
 
-    console.log(`[AutoContact] First message sent to ${phone}: "${replyText.substring(0, 60)}..."`);
+    console.log(`[AutoContact:${userId}] First message sent to ${phone}: "${replyText.substring(0, 60)}..."`);
     return lead;
   } catch (err) {
-    console.error(`[AutoContact] Failed to send first message to ${phone}:`, err.message);
+    console.error(`[AutoContact:${userId}] Failed to send first message to ${phone}:`, err.message);
     return lead;
   }
 }

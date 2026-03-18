@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Zap, Phone, Mail, CheckCircle2, MessageSquare, TrendingUp, AlertCircle, Loader2, QrCode, Wifi, WifiOff } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Settings, Zap, Phone, Mail, CheckCircle2, MessageSquare, TrendingUp, AlertCircle, Loader2, QrCode, Wifi, WifiOff, ChevronDown, RefreshCcw, Plus, Trash2, Pencil, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Config, ServiceStatus } from '../types';
+import { Config, ServiceStatus, CustomScenario } from '../types';
+import { SCENARIOS } from '../constants/scenarios';
 
 interface SettingsViewProps {
   config: Config;
@@ -16,7 +17,19 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
   const [waQR, setWaQR] = useState<string | null>(null);
   const [waConnecting, setWaConnecting] = useState(false);
   const [waError, setWaError] = useState<string | null>(null);
+  const [waPairPhone, setWaPairPhone] = useState('');
+  const [waPairCode, setWaPairCode] = useState<string | null>(null);
+  const [waPairing, setWaPairing] = useState(false);
+  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
+  const [newScenarioName, setNewScenarioName] = useState('');
+  const [showAddScenario, setShowAddScenario] = useState(false);
   const isFirstRender = React.useRef(true);
+
+  // Merge default scenarios with user custom scenarios
+  const allScenarios = useMemo(() => {
+    const custom = (config.customScenarios || []).map(s => ({ ...s }));
+    return [...SCENARIOS, ...custom];
+  }, [config.customScenarios]);
 
   // Auto-save config when it changes (debounced)
   useEffect(() => {
@@ -28,6 +41,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     const timeout = setTimeout(() => {
       fetch('/api/config', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       }).then(() => {
@@ -43,29 +57,34 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     if (!waConnecting) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch('/api/whatsapp/qr');
+        const res = await fetch('/api/whatsapp/qr', { credentials: 'include' });
         const data = await res.json();
-        if (data.qr) setWaQR(data.qr);
+        if (data.qr && !waPairCode) setWaQR(data.qr);
+        if (data.status?.pairingCode && waPairCode !== data.status.pairingCode) {
+          setWaPairCode(data.status.pairingCode);
+        }
         if (data.status?.connected) {
           setWaConnecting(false);
           setWaQR(null);
+          setWaPairCode(null);
           setWaError(null);
         }
         // Detect initialization failure
         if (data.status?.error && !data.status?.initializing && !data.status?.connected) {
           setWaConnecting(false);
           setWaQR(null);
+          setWaPairCode(null);
           setWaError(data.status.error);
         }
       } catch { /* ignore */ }
     }, 2000);
     return () => clearInterval(interval);
-  }, [waConnecting]);
+  }, [waConnecting, waPairCode]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch('/api/config', {
+      await fetch('/api/config', { credentials: 'include', 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
@@ -84,7 +103,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     setWaQR(null);
     setWaError(null);
     try {
-      const res = await fetch('/api/whatsapp/connect', { method: 'POST' });
+      const res = await fetch('/api/whatsapp/connect', { credentials: 'include',  method: 'POST' });
       const data = await res.json();
       if (data.status === 'error') {
         setWaConnecting(false);
@@ -99,16 +118,102 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
 
   const handleWhatsAppDisconnect = async () => {
     try {
-      await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+      await fetch('/api/whatsapp/disconnect', { credentials: 'include',  method: 'POST' });
       setWaQR(null);
+      setWaPairCode(null);
       setWaConnecting(false);
     } catch (err) {
       console.error('WhatsApp disconnect error:', err);
     }
   };
 
+  const handleRequestPairingCode = async () => {
+    if (!waPairPhone) return;
+    setWaPairing(true);
+    setWaError(null);
+    try {
+      const res = await fetch('/api/whatsapp/pair', { credentials: 'include', 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: waPairPhone }),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setWaPairCode(data.code);
+      } else {
+        setWaError(data.error || 'Failed to request code');
+      }
+    } catch (err) {
+      setWaError('Network error requesting pairing code');
+    } finally {
+      setWaPairing(false);
+    }
+  };
+
   const waStatus = serviceStatus?.whatsapp;
   const isWaConnected = waStatus?.connected || false;
+
+  const handleScenarioChange = (channel: 'whatsapp' | 'email', scenarioId: string) => {
+    const scenario = allScenarios.find(s => s.id === scenarioId);
+    if (!scenario) return;
+    
+    if (channel === 'whatsapp') {
+      setConfig({ 
+        ...config, 
+        whatsappSystemPrompt: scenario.whatsappPrompt,
+        whatsappScenario: scenarioId
+      });
+    } else {
+      setConfig({ 
+        ...config, 
+        emailSystemPrompt: scenario.emailPrompt,
+        emailScenario: scenarioId
+      });
+    }
+  };
+
+  const handleAddCustomScenario = () => {
+    if (!newScenarioName.trim()) return;
+    const newScenario: CustomScenario = {
+      id: `custom-${Date.now()}`,
+      label: newScenarioName.trim(),
+      icon: '✨',
+      whatsappPrompt: '',
+      emailPrompt: '',
+    };
+    setConfig({
+      ...config,
+      customScenarios: [...(config.customScenarios || []), newScenario],
+    });
+    setNewScenarioName('');
+    setShowAddScenario(false);
+    setEditingScenarioId(newScenario.id);
+  };
+
+  const handleDeleteCustomScenario = (id: string) => {
+    const updated = (config.customScenarios || []).filter(s => s.id !== id);
+    const patch: Partial<Config> = { customScenarios: updated };
+    // If the deleted scenario was selected, fallback to 'universal'
+    if (config.whatsappScenario === id) {
+      const uni = SCENARIOS.find(s => s.id === 'universal')!;
+      patch.whatsappScenario = 'universal';
+      patch.whatsappSystemPrompt = uni.whatsappPrompt;
+    }
+    if (config.emailScenario === id) {
+      const uni = SCENARIOS.find(s => s.id === 'universal')!;
+      patch.emailScenario = 'universal';
+      patch.emailSystemPrompt = uni.emailPrompt;
+    }
+    setConfig({ ...config, ...patch });
+    if (editingScenarioId === id) setEditingScenarioId(null);
+  };
+
+  const handleUpdateCustomScenario = (id: string, field: keyof CustomScenario, value: string) => {
+    const updated = (config.customScenarios || []).map(s =>
+      s.id === id ? { ...s, [field]: value } : s
+    );
+    setConfig({ ...config, customScenarios: updated });
+  };
 
   return (
     <motion.div
@@ -170,15 +275,46 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
               <p className="text-[10px] text-red-400 mt-1">{serviceStatus.agentmail.error}</p>
             )}
           </div>
-          <div className="space-y-2 mt-4">
-            <label className="text-xs text-zinc-500 uppercase font-bold">Email Agent Instructions</label>
+          <div className="space-y-4 mt-6">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-zinc-500 uppercase font-bold">Email Agent Instructions</label>
+              <div className="relative inline-block text-left">
+                <select 
+                  value={config.emailScenario || 'universal'} 
+                  onChange={(e) => handleScenarioChange('email', e.target.value)}
+                  className="appearance-none bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer hover:bg-zinc-700"
+                >
+                  {SCENARIOS.map(s => (
+                    <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                  ))}
+                  {(config.customScenarios || []).length > 0 && (
+                    <option disabled>── Custom ──</option>
+                  )}
+                  {(config.customScenarios || []).map(s => (
+                    <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              </div>
+            </div>
+            
             <p className="text-[10px] text-zinc-600">Instruct the AI on how to respond to emails — tone, negotiation style, language preferences. The agent will follow these instructions when composing email replies.</p>
-            <textarea
-              value={config.emailSystemPrompt}
-              onChange={(e) => setConfig({ ...config, emailSystemPrompt: e.target.value })}
-              placeholder={"Ești un agent AI expert în negociere și cumpărare de produse/servicii.\n\nOBIECTIVE:\n- Negociază prețuri mai mici cu diplomație\n- Fii politicos dar ferm în negociere\n- Propune contra-oferte rezonabile (10-25% reducere)\n- Răspunde în limba în care ești abordat\n- Menține un ton profesional dar prietenos"}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[120px] resize-y"
-            />
+            
+            <div className="relative group">
+              <textarea
+                value={config.emailSystemPrompt}
+                onChange={(e) => setConfig({ ...config, emailSystemPrompt: e.target.value })}
+                placeholder={"Ești un agent AI expert în negociere și cumpărare de produse/servicii..."}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[120px] resize-y custom-scrollbar"
+              />
+              <button 
+                onClick={() => handleScenarioChange('email', config.emailScenario || 'universal')}
+                className="absolute top-2 right-2 p-1.5 bg-zinc-800/80 hover:bg-zinc-700 rounded-lg text-zinc-500 hover:text-indigo-400 transition-all opacity-0 group-hover:opacity-100"
+                title="Reset to scenario template"
+              >
+                <RefreshCcw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </section>
 
@@ -212,30 +348,43 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
             </div>
           ) : waConnecting || waQR ? (
             /* QR code state */
-            <div className="p-6 bg-zinc-800/30 rounded-2xl border border-amber-500/20 space-y-4">
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
-                <div>
-                  <p className="font-medium text-amber-400">Waiting for QR scan...</p>
-                  <p className="text-xs text-zinc-500">Open WhatsApp on your phone → Linked Devices → Link a Device</p>
-                </div>
-              </div>
-              {waQR ? (
-                <div className="flex justify-center">
-                  <div className="bg-white p-3 rounded-2xl">
-                    <img src={waQR} alt="WhatsApp QR Code" className="w-48 h-48" />
+            <div className="p-6 bg-zinc-800/30 rounded-2xl border border-amber-500/20 space-y-6">
+              <div className="flex items-start gap-4 flex-col lg:flex-row">
+                <div className="flex-1 space-y-4 w-full">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+                    <div>
+                      <p className="font-medium text-amber-400">Waiting for connection...</p>
+                      <p className="text-xs text-zinc-500">Scan QR or link with phone number</p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-zinc-800/50">
+                    <p className="text-xs text-zinc-500">Open WhatsApp on your phone → <strong className="text-zinc-400">Linked Devices</strong> → <strong className="text-zinc-400">Link a Device</strong> → scan the QR code.</p>
                   </div>
                 </div>
-              ) : (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-8 h-8 text-zinc-600 animate-spin" />
+
+                <div className="hidden lg:block w-px self-stretch bg-zinc-800/50 mx-2" />
+
+                {/* QR Code Section */}
+                <div className="flex flex-col items-center justify-center space-y-2 lg:w-64 self-center w-full pt-4 lg:pt-0 border-t lg:border-t-0 border-zinc-800/50">
+                  {waQR && !waPairCode ? (
+                    <div className="bg-white p-3 rounded-xl">
+                      <img src={waQR} alt="WhatsApp QR Code" className="w-56 h-56" />
+                    </div>
+                  ) : !waPairCode ? (
+                    <div className="w-56 h-56 flex items-center justify-center bg-zinc-900 rounded-xl border border-zinc-800 border-dashed">
+                      <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
+                    </div>
+                  ) : null}
                 </div>
-              )}
+              </div>
+
               <button
-                onClick={() => { setWaConnecting(false); setWaQR(null); }}
+                onClick={() => { setWaConnecting(false); setWaQR(null); setWaPairCode(null); }}
                 className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm text-zinc-400 transition-colors"
               >
-                Cancel
+                Cancel Connection
               </button>
             </div>
           ) : (
@@ -262,15 +411,181 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
             </div>
           )}
 
-          <div className="space-y-2 mt-4">
-            <label className="text-xs text-zinc-500 uppercase font-bold">WhatsApp Agent Instructions</label>
-            <p className="text-[10px] text-zinc-600">Instruct the AI on how to respond to WhatsApp messages — persona, tone, behavior rules. The agent remembers the last 20 messages with each contact for context.</p>
-            <textarea
-              value={config.whatsappSystemPrompt}
-              onChange={(e) => setConfig({ ...config, whatsappSystemPrompt: e.target.value })}
-              placeholder={"Ești o persoană reală care vorbește pe WhatsApp cu o cunoștință.\n\nREGULI:\n- Răspunde cât mai natural, scurt și la obiect\n- Folosește un ton relaxat, prietenos\n- Nu menționa sub nicio formă că ești o inteligență artificială\n- Răspunde în limba în care ești abordat\n- Negociază prețuri cu diplomație și răbdare"}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[120px] resize-y"
-            />
+          <div className="space-y-4 mt-6">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-zinc-500 uppercase font-bold">WhatsApp Agent Instructions</label>
+              <div className="relative inline-block text-left">
+                <select 
+                  value={config.whatsappScenario || 'universal'} 
+                  onChange={(e) => handleScenarioChange('whatsapp', e.target.value)}
+                  className="appearance-none bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer hover:bg-zinc-700"
+                >
+                  {SCENARIOS.map(s => (
+                    <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                  ))}
+                  {(config.customScenarios || []).length > 0 && (
+                    <option disabled>── Custom ──</option>
+                  )}
+                  {(config.customScenarios || []).map(s => (
+                    <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              </div>
+            </div>
+            
+            <p className="text-[10px] text-zinc-600">Instruct the AI on how to respond to WhatsApp messages — persona, tone, behavior rules. The agent remembers history for context.</p>
+            
+            <div className="relative group">
+              <textarea
+                value={config.whatsappSystemPrompt}
+                onChange={(e) => setConfig({ ...config, whatsappSystemPrompt: e.target.value })}
+                placeholder={"Ești o persoană reală..."}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[120px] resize-y custom-scrollbar"
+              />
+              <button 
+                onClick={() => handleScenarioChange('whatsapp', config.whatsappScenario || 'universal')}
+                className="absolute top-2 right-2 p-1.5 bg-zinc-800/80 hover:bg-zinc-700 rounded-lg text-zinc-500 hover:text-indigo-400 transition-all opacity-0 group-hover:opacity-100"
+                title="Reset to scenario template"
+              >
+                <RefreshCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Custom Scenarios ── */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-cyan-400" /> Prompturi Custom
+            </h3>
+            <button
+              onClick={() => setShowAddScenario(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-xs font-medium text-cyan-400 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Adaugă
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {showAddScenario && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 bg-zinc-800/30 rounded-xl border border-cyan-500/20 space-y-3">
+                  <label className="text-xs text-zinc-500 uppercase font-bold">Numele Scenariului</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newScenarioName}
+                      onChange={(e) => setNewScenarioName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddCustomScenario()}
+                      placeholder="Ex: Agent Imobiliare Lux"
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleAddCustomScenario}
+                      disabled={!newScenarioName.trim()}
+                      className="px-3 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-lg text-sm font-medium text-cyan-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => { setShowAddScenario(false); setNewScenarioName(''); }}
+                      className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm text-zinc-400 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {(config.customScenarios || []).length === 0 && !showAddScenario && (
+            <div className="p-6 bg-zinc-800/20 rounded-xl border border-dashed border-zinc-800/50 text-center">
+              <p className="text-xs text-zinc-600">Nu ai creat încă niciun prompt custom. Apasă "Adaugă" pentru a crea unul.</p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {(config.customScenarios || []).map((scenario) => (
+              <motion.div
+                key={scenario.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-800/50 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{scenario.icon}</span>
+                    {editingScenarioId === scenario.id ? (
+                      <input
+                        type="text"
+                        value={scenario.label}
+                        onChange={(e) => handleUpdateCustomScenario(scenario.id, 'label', e.target.value)}
+                        className="bg-zinc-900 border border-zinc-700 rounded-lg py-1 px-2 text-sm font-medium focus:outline-none focus:border-cyan-500 transition-colors"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-zinc-300">{scenario.label}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setEditingScenarioId(editingScenarioId === scenario.id ? null : scenario.id)}
+                      className={`p-1.5 rounded-lg transition-colors ${editingScenarioId === scenario.id ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300'}`}
+                      title={editingScenarioId === scenario.id ? 'Închide editarea' : 'Editează'}
+                    >
+                      {editingScenarioId === scenario.id ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCustomScenario(scenario.id)}
+                      className="p-1.5 hover:bg-red-500/10 rounded-lg text-zinc-500 hover:text-red-400 transition-colors"
+                      title="Șterge"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {editingScenarioId === scenario.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-3 overflow-hidden"
+                    >
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold">Prompt WhatsApp</label>
+                        <textarea
+                          value={scenario.whatsappPrompt}
+                          onChange={(e) => handleUpdateCustomScenario(scenario.id, 'whatsappPrompt', e.target.value)}
+                          placeholder="Instrucțiuni pentru agentul WhatsApp..."
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-cyan-500 transition-colors text-sm min-h-[100px] resize-y custom-scrollbar"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] text-zinc-500 uppercase font-bold">Prompt Email</label>
+                        <textarea
+                          value={scenario.emailPrompt}
+                          onChange={(e) => handleUpdateCustomScenario(scenario.id, 'emailPrompt', e.target.value)}
+                          placeholder="Instrucțiuni pentru agentul de Email..."
+                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 focus:outline-none focus:border-cyan-500 transition-colors text-sm min-h-[100px] resize-y custom-scrollbar"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
           </div>
         </section>
 

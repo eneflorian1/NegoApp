@@ -51,9 +51,9 @@ export function findLeadByPhone(waFrom) {
   return leads.find(l => normalizePhone(l.phoneNumber) === normalized || normalizePhone(l.whatsappId) === normalized);
 }
 
-/** Format phone for WhatsApp: ensure country code, add @c.us */
+/** Format phone for WhatsApp: ensure country code, add @s.whatsapp.net */
 export function phoneToWhatsAppId(phone) {
   let waId = phone.replace(/[^0-9]/g, '');
   if (waId.startsWith('0')) waId = '40' + waId.substring(1); // Romanian prefix
-  return waId + '@c.us';
+  return waId + '@s.whatsapp.net';
 }

@@ -1,27 +1,37 @@
 /**
- * Config & Service Status Routes — /api/config, /api/services/status, /api/whatsapp/*, /api/status, /api/proxies, /api/strategies, /api/intelligence, /api/orchestrate
+ * Config & Service Status Routes — per-user
  */
 import { Router } from 'express';
 import ConfigRepo from '../db/models/Config.js';
 import MissionRepo from '../db/models/Mission.js';
 import { autoContactSeller } from '../core/contact-service.js';
+import { requireAuth } from '../middleware/auth.js';
 
 export default function createConfigRoutes({ whatsapp, agentmail, gemini, orchestrator, proxyManager, domainStrategy, siteIntelligence, categoryScraper, revealRouter, batchRouter }) {
   const router = Router();
 
+  // Public: health check
+  router.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+
+  // All other routes require auth
+  router.use(requireAuth);
+
   // ─── Config ────────────────────────────────────────────────────────────────
-  router.get('/config', (req, res) => {
-    try { res.json(ConfigRepo.load()); }
-    catch (err) { res.status(500).json({ error: err.message }); }
+  router.get('/config', async (req, res) => {
+    try {
+      await ConfigRepo.initUser(req.user.id);
+      res.json(ConfigRepo.load(req.user.id));
+    } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
   router.post('/config', async (req, res) => {
     try {
+      const userId = req.user.id;
       const cfg = req.body;
-      ConfigRepo.save(cfg);
+      ConfigRepo.save(userId, cfg);
       if (cfg.agentMailApiKey && cfg.agentMailApiKey.length > 5 && !agentmail.isConnected) {
         agentmail.connect(cfg.agentMailApiKey).catch(err => {
-          console.error('[Server] AgentMail connect after config save failed:', err.message);
+          console.error('[Server] AgentMail connect failed:', err.message);
         });
       }
       res.json({ success: true });
@@ -29,27 +39,51 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
   });
 
   // ─── Service Status ────────────────────────────────────────────────────────
-  router.get('/services/status', async (req, res) => {
-    res.json({ whatsapp: whatsapp.getStatus(), agentmail: agentmail.getStatus() });
+  router.get('/services/status', (req, res) => {
+    const userId = req.user.id;
+    const waStatus = whatsapp.getStatus ? whatsapp.getStatus(userId) : whatsapp.getStatus();
+    res.json({ whatsapp: waStatus, agentmail: agentmail.getStatus() });
   });
 
   // ─── WhatsApp ──────────────────────────────────────────────────────────────
   router.post('/whatsapp/connect', async (req, res) => {
-    try { res.json(await whatsapp.connect()); }
-    catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+      const result = whatsapp.connect
+        ? await whatsapp.connect(req.user.id)
+        : await whatsapp.connect();
+      res.json(result);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  router.post('/whatsapp/pair', async (req, res) => {
+    try {
+      const { phone } = req.body;
+      if (!phone) return res.status(400).json({ error: 'Phone number is required' });
+      const waClient = whatsapp.getClient ? whatsapp.getClient(req.user.id) : whatsapp;
+      if (!waClient) return res.status(400).json({ error: 'WhatsApp not initialized. Connect first.' });
+      res.json(await waClient.requestPairingCode(phone));
+    } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
   router.get('/whatsapp/qr', (req, res) => {
-    res.json({ qr: whatsapp.getQR(), status: whatsapp.getStatus() });
+    const userId = req.user.id;
+    const qr = whatsapp.getQR ? whatsapp.getQR(userId) : whatsapp.getQR();
+    const status = whatsapp.getStatus ? whatsapp.getStatus(userId) : whatsapp.getStatus();
+    res.json({ qr, status });
   });
 
   router.get('/whatsapp/status', (req, res) => {
-    res.json(whatsapp.getStatus());
+    const userId = req.user.id;
+    res.json(whatsapp.getStatus ? whatsapp.getStatus(userId) : whatsapp.getStatus());
   });
 
   router.post('/whatsapp/disconnect', async (req, res) => {
-    try { await whatsapp.disconnect(); res.json({ success: true }); }
-    catch (err) { res.status(500).json({ error: err.message }); }
+    try {
+      if (whatsapp.disconnect) {
+        await whatsapp.disconnect(req.user.id);
+      }
+      res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
   });
 
   // ─── Status (global) ──────────────────────────────────────────────────────
@@ -71,10 +105,10 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
   });
 
   // ─── Proxies ───────────────────────────────────────────────────────────────
-  router.get('/proxies', (req, res) => { res.json(proxyManager.getStats()); });
+  router.get('/proxies', (req, res) => res.json(proxyManager.getStats()));
 
   // ─── Strategies ────────────────────────────────────────────────────────────
-  router.get('/strategies', (req, res) => { res.json(domainStrategy.listAll()); });
+  router.get('/strategies', (req, res) => res.json(domainStrategy.listAll()));
   router.get('/strategy/:domain', (req, res) => {
     const strategy = domainStrategy.load(req.params.domain);
     if (!strategy) return res.status(404).json({ error: 'Strategy not found' });
@@ -85,7 +119,9 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
   router.post('/intelligence/discover', async (req, res) => {
     const { domain, categoryUrl, listingUrl } = req.body;
     if (!domain) return res.status(400).json({ error: 'domain is required' });
-    if (!gemini.isAvailable) return res.status(503).json({ error: 'Gemini AI is not configured. Set GEMINI_API_KEY in .env' });
+    const cfg = ConfigRepo.load(req.user.id);
+    const userGemini = gemini.forKey(cfg.geminiApiKey);
+    if (!userGemini.isAvailable) return res.status(503).json({ error: 'Gemini API key not configured in Settings' });
     try {
       const strategy = await siteIntelligence.discover(domain, { categoryUrl: categoryUrl || null, listingUrl: listingUrl || null });
       res.json({ success: true, domain, strategy });
@@ -110,13 +146,17 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
 
   // ─── Full Orchestrator ─────────────────────────────────────────────────────
   router.post('/orchestrate/full', async (req, res) => {
+    const userId = req.user.id;
     const { url, query = '', domain: forceDomain, useProxy = false, maxPages = 2, maxListings = 50, maxReveals = 5, personality = 'diplomat' } = req.body;
     if (!url) return res.status(400).json({ error: 'url is required' });
     const domain = forceDomain || new URL(url).hostname.replace('www.', '');
     const mission = MissionRepo.create({
+      userId,
       mode: 'category', platform: domain.includes('olx') ? 'olx' : domain,
       url, useProxy, status: 'running', domain, strategy: domain,
     });
+
+    const waClient = whatsapp.getClient ? whatsapp.getClient(userId) : whatsapp;
 
     orchestrator.executeMission({
       url, query, domain: forceDomain, useProxy, maxPages, maxListings, maxReveals, personality,
@@ -126,7 +166,7 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
         mission.results.push(result);
         mission.updatedAt = new Date().toISOString();
         MissionRepo.save();
-        if (result.phone) await autoContactSeller(result, { gemini, whatsapp });
+        if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
       }
     }).then(async (fullMission) => {
       mission.results = fullMission.reveals || [];
@@ -147,25 +187,30 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
     res.json({ status: 'started', missionId: mission.id, maxListings, maxPages, maxReveals, message: `Full orchestration mission started. Poll /api/mission/${mission.id} for progress.` });
   });
 
-  // ─── Simple Orchestrate (single/category mode) ────────────────────────────
+  // ─── Simple Orchestrate ────────────────────────────────────────────────────
   router.post('/orchestrate', async (req, res) => {
+    const userId = req.user.id;
     const { mode, url, query, useProxy = false, platform = 'olx', personality = 'diplomat' } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
     if (!['single', 'category'].includes(mode)) return res.status(400).json({ error: 'Mode must be "single" or "category"' });
 
     const domain = platform === 'olx' ? 'olx.ro' : new URL(url).hostname.replace('www.', '');
     const strategy = domainStrategy.load(domain);
+    const cfg = ConfigRepo.load(userId);
+    const userGemini = gemini.forKey(cfg.geminiApiKey);
 
     if (!strategy) {
-      if (gemini.isAvailable) {
+      if (userGemini.isAvailable) {
         try { await siteIntelligence.discover(domain, { listingUrl: mode === 'single' ? url : undefined, categoryUrl: mode === 'category' ? url : undefined }); }
-        catch (err) { return res.status(400).json({ error: `No strategy for ${domain} and AI discovery failed: ${err.message}`, domain, status: 'unknown' }); }
+        catch (err) { return res.status(400).json({ error: `No strategy for ${domain} and AI discovery failed: ${err.message}` }); }
       } else {
-        return res.status(400).json({ error: `No strategy available for ${domain}. AI discovery disabled (no GEMINI_API_KEY).`, domain, status: 'unknown' });
+        return res.status(400).json({ error: `No strategy available for ${domain}. Configure Gemini API key in Settings.` });
       }
     }
 
+    const waClient = whatsapp.getClient ? whatsapp.getClient(userId) : whatsapp;
     const mission = MissionRepo.create({
+      userId,
       mode, platform, url, query: query || null, useProxy, status: 'running', domain, strategy: domain,
     });
 
@@ -181,7 +226,7 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
           mission.status = result.success ? 'completed' : 'error';
           mission.updatedAt = new Date().toISOString();
           MissionRepo.save();
-          if (result.success) await autoContactSeller(result, { gemini, whatsapp });
+          if (result.success) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
         } catch (err) {
           mission.status = 'error';
           mission.results = [{ success: false, error: err.message, url }];
@@ -206,9 +251,8 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
           mission.summary = fullMission.summary;
           mission.updatedAt = new Date().toISOString();
           MissionRepo.save();
-          const reveals = fullMission.reveals || [];
-          for (const result of reveals) {
-            if (result.success && result.phone) await autoContactSeller(result, { gemini, whatsapp });
+          for (const result of (fullMission.reveals || [])) {
+            if (result.success && result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
           }
         } catch (err) {
           mission.status = 'error';
@@ -217,12 +261,9 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
           MissionRepo.save();
         }
       })();
-      res.json({ missionId: mission.id, status: 'running', message: `Category scan started for ${domain}`, query: query || null });
+      res.json({ missionId: mission.id, status: 'running', message: `Category scan started for ${domain}` });
     }
   });
-
-  // ─── Health ────────────────────────────────────────────────────────────────
-  router.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
 
   return router;
 }

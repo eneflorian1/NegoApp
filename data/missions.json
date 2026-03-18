@@ -1566,5 +1566,42 @@
     "progress": 100,
     "createdAt": "2026-03-16T16:36:56.198Z",
     "updatedAt": "2026-03-16T16:37:06.291Z"
+  },
+  {
+    "id": "mission-1773690353264-n562l6",
+    "results": [],
+    "leadsFound": 0,
+    "leadsContacted": 0,
+    "progress": 0,
+    "createdAt": "2026-03-16T19:45:53.264Z",
+    "updatedAt": "2026-03-16T19:54:05.617Z",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/oferte/",
+    "useProxy": false,
+    "status": "aborted",
+    "domain": "olx.ro",
+    "strategy": "olx.ro"
+  },
+  {
+    "id": "mission-1773690856298-u5ktlx",
+    "results": [
+      {
+        "success": false,
+        "error": "Cannot read properties of undefined (reading 'length')"
+      }
+    ],
+    "leadsFound": 0,
+    "leadsContacted": 1,
+    "progress": 0,
+    "createdAt": "2026-03-16T19:54:16.298Z",
+    "updatedAt": "2026-03-16T19:58:53.570Z",
+    "mode": "category",
+    "platform": "olx",
+    "url": "https://www.olx.ro/moda-frumusete/?currency=RON",
+    "useProxy": false,
+    "status": "error",
+    "domain": "olx.ro",
+    "strategy": "olx.ro"
   }
 ]

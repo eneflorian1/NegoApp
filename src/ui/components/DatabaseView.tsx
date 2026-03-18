@@ -10,7 +10,7 @@ interface Mission {
   url: string;
   query?: string;
   useProxy: boolean;
-  status: 'running' | 'completed' | 'error' | 'aborted';
+  status: 'running' | 'completed' | 'error' | 'aborted' | 'interrupted';
   domain: string;
   results: any[]; // For single mode
   reveals?: any[]; // For category mode
@@ -44,8 +44,8 @@ export default function DatabaseView() {
   async function fetchData() {
     try {
       const [mRes, sRes] = await Promise.all([
-        fetch('/api/missions'),
-        fetch('/api/missions/stats'),
+        fetch('/api/missions', { credentials: 'include' }),
+        fetch('/api/missions/stats', { credentials: 'include' }),
       ]);
       const mData = await mRes.json();
       const sData = await sRes.json();
@@ -147,7 +147,7 @@ export default function DatabaseView() {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {['all', 'completed', 'running', 'aborted', 'error'].map(s => (
+          {['all', 'completed', 'running', 'aborted', 'interrupted', 'error'].map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -205,6 +205,7 @@ function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop }: {
     if (status === 'completed') return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
     if (status === 'error') return <XCircle className="w-4 h-4 text-red-500" />;
     if (status === 'aborted') return <StopCircle className="w-4 h-4 text-amber-500" />;
+    if (status === 'interrupted') return <StopCircle className="w-4 h-4 text-zinc-500" />;
     return <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin" />;
   };
 
@@ -212,6 +213,7 @@ function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop }: {
     if (status === 'completed') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
     if (status === 'error') return 'bg-red-500/10 text-red-400 border-red-500/30';
     if (status === 'aborted') return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+    if (status === 'interrupted') return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30';
     return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
   };
 
@@ -222,6 +224,7 @@ function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop }: {
       mission.status === 'completed' ? 'border-l-4 border-l-emerald-500' :
       mission.status === 'error' ? 'border-l-4 border-l-red-500' :
       mission.status === 'aborted' ? 'border-l-4 border-l-amber-500' :
+      mission.status === 'interrupted' ? 'border-l-4 border-l-zinc-600' :
       'border-l-4 border-l-indigo-500'
     }`}>
       {/* Header Row */}

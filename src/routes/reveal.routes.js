@@ -3,10 +3,13 @@
  */
 import { Router } from 'express';
 import PhoneRevealer from '../scraper/phone-revealer.js';
+import { requireAuth } from '../middleware/auth.js';
 
 export default function createRevealRoutes({ proxyManager, domainStrategy }) {
   const router = Router();
   const activeReveal = { running: false, result: null };
+
+  router.use(requireAuth);
 
   router.post('/reveal', async (req, res) => {
     const { url, useProxy = false } = req.body;

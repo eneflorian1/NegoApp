@@ -3,17 +3,26 @@
  */
 import { Router } from 'express';
 import MissionRepo from '../db/models/Mission.js';
+import ConfigRepo from '../db/models/Config.js';
 import { autoContactSeller } from '../core/contact-service.js';
+import { requireAuth } from '../middleware/auth.js';
 
 export default function createChatRoutes({ orchestrator, gemini, proxyManager, siteIntelligence, domainStrategy, whatsapp }) {
   const router = Router();
 
+  router.use(requireAuth);
+
   router.post('/chat', async (req, res) => {
+    const userId = req.user.id;
     const { message, history = [], personality = 'diplomat' } = req.body;
     if (!message) return res.status(400).json({ error: 'message is required' });
 
+    const cfg = ConfigRepo.load(userId);
+    const userGemini = gemini.forKey(cfg.geminiApiKey);
     const intent = detectIntent(message);
-    console.log(`[Chat] Message: "${message}" → Intent: ${intent.action}`);
+    console.log(`[Chat:${userId}] Message: "${message}" → Intent: ${intent.action}`);
+
+    const waClient = whatsapp.getClient ? whatsapp.getClient(userId) : whatsapp;
 
     try {
       let response;
@@ -25,6 +34,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
 
           const domain = new URL(url).hostname.replace('www.', '');
           const mission = MissionRepo.create({
+            userId,
             mode: 'single', platform: domain.includes('olx') ? 'olx' : domain,
             url, useProxy: intent.useProxy || false, status: 'running', domain, strategy: domain,
           });
@@ -40,7 +50,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
               mission.status = result.success ? 'completed' : 'error';
               mission.updatedAt = new Date().toISOString();
               MissionRepo.save();
-              if (result.success) await autoContactSeller(result, { gemini, whatsapp });
+              if (result.success) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
             } catch (err) {
               mission.status = 'error';
               mission.results = [{ success: false, error: err.message, url }];
@@ -63,6 +73,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
 
           const domain = new URL(url).hostname.replace('www.', '');
           const mission = MissionRepo.create({
+            userId,
             mode: 'category', platform: domain.includes('olx') ? 'olx' : domain,
             url, useProxy: intent.useProxy || false, status: 'running', domain, strategy: domain,
           });
@@ -82,7 +93,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
                   mission.results.push(result);
                   mission.updatedAt = new Date().toISOString();
                   MissionRepo.save();
-                  if (result.phone) await autoContactSeller(result, { gemini, whatsapp });
+                  if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
                 }
               });
               mission.results = fullMission.reveals || [];
@@ -110,20 +121,20 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
         }
 
         case 'analyze_listing': {
-          if (!gemini.isAvailable) { response = { content: '⚠️ Gemini API nu este configurat. Setează GEMINI_API_KEY în .env', toolCall: null }; break; }
+          if (!userGemini.isAvailable) { response = { content: '⚠️ Gemini API nu este configurat. Setează cheia în Settings.', toolCall: null }; break; }
           const listingData = intent.data || message;
-          const analysis = await gemini.analyzeListing({ description: listingData });
+          const analysis = await userGemini.analyzeListing({ description: listingData });
           response = { content: formatAnalysis(analysis), toolCall: { name: 'analyze_listing', args: { data: listingData }, result: analysis, status: 'completed' } };
           break;
         }
 
         case 'check_status': {
           const orchStats = orchestrator.getStats();
-          const serverAll = MissionRepo.getAll();
+          const serverAll = MissionRepo.getAll(userId);
           const running = serverAll.filter(m => m.status === 'running');
           let statusText = `**Status sistem:**\n`;
           statusText += `• Misiuni active: ${running.length + orchStats.running}\n`;
-          statusText += `• Gemini AI: ${gemini.isAvailable ? '✅ Activ' : '❌ Dezactivat'}\n`;
+          statusText += `• Gemini AI: ${userGemini.isAvailable ? '✅ Activ' : '❌ Dezactivat'}\n`;
           statusText += `• Proxy-uri: ${proxyManager.availableCount}/${proxyManager.totalCount}\n`;
           statusText += `• Total misiuni: ${serverAll.length + orchStats.total}\n`;
           if (running.length > 0) {
@@ -137,7 +148,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
         case 'list_missions': {
           const allMissions = [
             ...orchestrator.getAllMissions(),
-            ...MissionRepo.getAll(),
+            ...MissionRepo.getAll(userId),
           ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
           if (allMissions.length === 0) {
@@ -156,10 +167,10 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
         }
 
         default: {
-          if (gemini.isAvailable) {
+          if (userGemini.isAvailable) {
             const systemPrompt = `Ești asistentul AI al NegoApp — o platformă de negociere automată pe marketplace-uri.\nPoți ajuta cu: extragerea telefoanelor, analiza anunțurilor, scanare categorii, sfaturi negociere.\nProfil negociere activ: ${personality.toUpperCase()}.\nRăspunde concis în română. Dacă user-ul trimite un URL, sugerează-i extracția.`;
             const prompt = `${systemPrompt}\n\nUser: ${message}`;
-            const aiText = await gemini.generate(prompt, { temperature: 0.7, maxTokens: 1024 });
+            const aiText = await userGemini.generate(prompt, { temperature: 0.7, maxTokens: 1024 });
             response = { content: aiText, toolCall: null };
           } else {
             response = { content: detectHelpMessage(message), toolCall: null };
@@ -169,7 +180,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
 
       res.json(response);
     } catch (err) {
-      console.error(`[Chat] Error:`, err.message);
+      console.error(`[Chat:${userId}] ERROR:`, err.message);
       res.status(500).json({ error: err.message });
     }
   });
@@ -232,5 +243,5 @@ Poți folosi următoarele comenzi:
 
 • **Analizează** — analizează o descriere de produs
 
-Gemini AI nu este configurat. Setează \`GEMINI_API_KEY\` în \`.env\` pentru conversație liberă.`;
+Configurează cheia Gemini API în Settings pentru conversație liberă.`;
 }
