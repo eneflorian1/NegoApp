@@ -267,9 +267,9 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="max-w-2xl mx-auto space-y-8 pb-12"
+      className="max-w-2xl mx-auto space-y-6 sm:space-y-8 pb-32 lg:pb-12"
     >
-      <div className="glass-panel rounded-3xl p-8 space-y-8 relative overflow-hidden">
+      <div className="glass-panel rounded-[2rem] p-5 sm:p-8 space-y-8 relative overflow-hidden">
         <AnimatePresence>
           {showSuccess && (
             <motion.div
@@ -324,13 +324,13 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
             )}
           </div>
           <div className="space-y-4 mt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
               <label className="text-xs text-zinc-500 uppercase font-bold">Email Agent Instructions</label>
-              <div className="relative inline-block text-left">
+              <div className="relative inline-block text-left w-full sm:w-auto">
                 <select 
                   value={config.emailScenario || 'universal'} 
                   onChange={(e) => handleScenarioChange('email', e.target.value)}
-                  className="appearance-none bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer hover:bg-zinc-700"
+                  className="w-full sm:w-auto appearance-none bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer hover:bg-zinc-700"
                 >
                   {SCENARIOS.map(s => (
                     <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
@@ -407,8 +407,30 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                     </div>
                   </div>
                   
-                  <div className="pt-3 border-t border-zinc-800/50">
-                    <p className="text-xs text-zinc-500">Open WhatsApp on your phone → <strong className="text-zinc-400">Linked Devices</strong> → <strong className="text-zinc-400">Link a Device</strong> → scan the QR code.</p>
+                  <div className="pt-3 border-t border-zinc-800/50 space-y-3">
+                    <p className="text-xs text-zinc-500">Scan QR: WhatsApp pe telefon → <strong className="text-zinc-400">Linked Devices</strong> → <strong className="text-zinc-400">Link a Device</strong> → scanează codul.</p>
+                    
+                    <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50 space-y-2">
+                      <p className="text-xs font-medium text-zinc-400">Ești deja pe telefon? Conectează fără a scana QR</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={waPairPhone}
+                          onChange={(e) => setWaPairPhone(e.target.value)}
+                          placeholder="Prefix+Număr (ex: 407XXXXXXXX)"
+                          disabled={waPairing}
+                          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                        />
+                        <button
+                          onClick={handleRequestPairingCode}
+                          disabled={waPairing || !waPairPhone || !!waPairCode}
+                          className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-sm font-medium text-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center min-w-[100px]"
+                        >
+                          {waPairing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generează Cod'}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 leading-tight">Introduci numărul tău de WhatsApp și primești un cod cu care te conectezi din secțiunea "Link with phone number" ("Asociază număr de telefon") din WhatsApp.</p>
+                    </div>
                   </div>
                 </div>
 
@@ -416,15 +438,27 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
 
                 {/* QR Code Section */}
                 <div className="flex flex-col items-center justify-center space-y-2 lg:w-64 self-center w-full pt-4 lg:pt-0 border-t lg:border-t-0 border-zinc-800/50">
-                  {waQR && !waPairCode ? (
-                    <div className="bg-white p-3 rounded-xl">
+                  {waPairCode ? (
+                    <div className="w-56 h-56 flex flex-col items-center justify-center bg-zinc-900 rounded-xl border border-amber-500/50 space-y-3 p-4 text-center">
+                      <div className="w-10 h-10 bg-amber-500/10 rounded-full flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <p className="text-xs font-medium text-amber-400">Introdu codul în WhatsApp</p>
+                      <div className="text-2xl font-mono tracking-widest text-white font-bold bg-zinc-800 px-4 py-2 rounded-lg border border-zinc-700 shadow-inner">
+                        {waPairCode}
+                      </div>
+                      <p className="text-[10px] text-zinc-500 px-2 mt-2">Notificare din WhatsApp pe telefon: "Introduceți codul" / "Asociați".</p>
+                    </div>
+                  ) : waQR ? (
+                    <div className="bg-white p-3 rounded-xl shadow-lg border border-zinc-200">
                       <img src={waQR} alt="WhatsApp QR Code" className="w-56 h-56" />
                     </div>
-                  ) : !waPairCode ? (
-                    <div className="w-56 h-56 flex items-center justify-center bg-zinc-900 rounded-xl border border-zinc-800 border-dashed">
+                  ) : (
+                    <div className="w-56 h-56 flex flex-col items-center justify-center bg-zinc-900 rounded-xl border border-zinc-800 border-dashed gap-3">
                       <Loader2 className="w-6 h-6 text-zinc-600 animate-spin" />
+                      <span className="text-xs text-zinc-600 font-medium tracking-wide">Pregătire conexiune...</span>
                     </div>
-                  ) : null}
+                  )}
                 </div>
               </div>
 
@@ -460,13 +494,13 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
           )}
 
           <div className="space-y-4 mt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
               <label className="text-xs text-zinc-500 uppercase font-bold">WhatsApp Agent Instructions</label>
-              <div className="relative inline-block text-left">
+              <div className="relative inline-block text-left w-full sm:w-auto">
                 <select 
                   value={config.whatsappScenario || 'universal'} 
                   onChange={(e) => handleScenarioChange('whatsapp', e.target.value)}
-                  className="appearance-none bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer hover:bg-zinc-700"
+                  className="w-full sm:w-auto appearance-none bg-zinc-800 border border-zinc-700 rounded-lg py-1.5 pl-3 pr-8 text-xs font-medium text-zinc-300 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer hover:bg-zinc-700"
                 >
                   {SCENARIOS.map(s => (
                     <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
@@ -589,7 +623,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
 
         {/* ── Custom Scenarios ── */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-lg font-medium flex items-center gap-2">
               <Pencil className="w-5 h-5 text-cyan-400" /> Prompturi Custom
             </h3>
@@ -656,8 +690,8 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 exit={{ opacity: 0, y: -10 }}
                 className="p-4 bg-zinc-800/30 rounded-xl border border-zinc-800/50 space-y-3"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-base">{scenario.icon}</span>
                     {editingScenarioId === scenario.id ? (
                       <input

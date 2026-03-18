@@ -39,13 +39,14 @@ class OlxSession {
     }
 
     const browser = new StealthBrowser();
+    const DATA_DIR = join(__dirname, '..', '..', 'data');
     try {
-      console.log('[OlxSession] Launching visible browser for login (allows manual Captcha solving)...');
-      await browser.launch(null, { headless: false });
+      console.log('[OlxSession] Launching browser for login...');
+      await browser.launch(null, { headless: 'new' });
 
-      // Navigate to login page
+      // Navigate directly to login.olx.ro
       console.log('[OlxSession] Navigating to OLX login page...');
-      await browser.page.goto('https://www.olx.ro/cont/', {
+      await browser.page.goto('https://login.olx.ro/', {
         waitUntil: 'networkidle2',
         timeout: 30000,
       });
@@ -62,84 +63,116 @@ class OlxSession {
       } catch (e) { /* no consent popup */ }
 
       // Wait for login form
-      await browser.page.waitForSelector(SELECTORS.emailInput, { timeout: 10000 });
+      await browser.page.waitForSelector(SELECTORS.emailInput, { timeout: 15000 });
       console.log('[OlxSession] Login form found');
 
-      // Type email (human-like speed)
+      // Type email with human-like delays
       await browser.page.click(SELECTORS.emailInput);
-      await sleep(200, 400);
-      await browser.page.type(SELECTORS.emailInput, email, { delay: 80 + Math.random() * 60 });
+      await sleep(300, 500);
+      await browser.page.type(SELECTORS.emailInput, email, { delay: 50 + Math.random() * 40 });
+      await sleep(300, 500);
+
+      // Trigger input/change events to ensure React validation fires
+      await browser.page.evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (el) {
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new Event('blur', { bubbles: true }));
+        }
+      }, SELECTORS.emailInput);
       await sleep(500, 800);
 
       // Type password
       await browser.page.click(SELECTORS.passwordInput);
-      await sleep(200, 400);
-      await browser.page.type(SELECTORS.passwordInput, password, { delay: 80 + Math.random() * 60 });
-      await sleep(500, 1000);
+      await sleep(300, 500);
+      await browser.page.type(SELECTORS.passwordInput, password, { delay: 50 + Math.random() * 40 });
+      await sleep(300, 500);
 
-      // Click login button via JS to avoid overlay intercepts
-      console.log('[OlxSession] Submitting login...');
+      // Trigger events on password field too
       await browser.page.evaluate((sel) => {
-        const btn = document.querySelector(sel);
-        if (btn) btn.click();
-      }, SELECTORS.loginButton);
+        const el = document.querySelector(sel);
+        if (el) {
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new Event('blur', { bubbles: true }));
+        }
+      }, SELECTORS.passwordInput);
+      await sleep(1000, 1500);
 
-      console.log('[OlxSession] Waiting up to 60 seconds for successful redirect (user can solve CAPTCHA manually)...');
-      
-      // Wait for URL to change away from login page (polling)
+      // Wait for the Login button to become enabled (max 10s)
+      console.log('[OlxSession] Waiting for Login button to become enabled...');
+      let buttonEnabled = false;
+      for (let i = 0; i < 20; i++) {
+        buttonEnabled = await browser.page.evaluate((sel) => {
+          const btn = document.querySelector(sel);
+          return btn && !btn.disabled;
+        }, SELECTORS.loginButton);
+        if (buttonEnabled) break;
+        await sleep(500);
+      }
+
+      if (!buttonEnabled) {
+        console.error('[OlxSession] Login button never became enabled');
+        try { await browser.page.screenshot({ path: join(DATA_DIR, 'olx_debug_button_disabled.png') }); } catch(e) {}
+        return { success: false, cookieCount: 0, error: 'Butonul de Login nu s-a activat — posibil formatul emailului nu e acceptat de OLX.' };
+      }
+
+      // Click login button
+      console.log('[OlxSession] Login button enabled — clicking...');
+      await browser.page.click(SELECTORS.loginButton);
+
+      // Wait for URL to change away from login page (polling, max 30s)
+      console.log('[OlxSession] Waiting for redirect after login...');
       let isStillOnLogin = true;
       let errorText = null;
-      let waited = 0;
       
-      while (waited < 60000) {
+      for (let waited = 0; waited < 30000; waited += 2000) {
         await sleep(2000);
-        waited += 2000;
         
         const currentUrl = browser.page.url();
-        isStillOnLogin = currentUrl.includes('/cont/') || currentUrl.includes('/login');
+        isStillOnLogin = currentUrl.includes('login.olx') || currentUrl.includes('/cont/') || currentUrl.includes('/login');
         
-        if (!isStillOnLogin) break; // Success, redirected!
+        if (!isStillOnLogin) break;
 
-        // Check for error messages dynamically
+        // Check for error messages
         errorText = await browser.page.evaluate(() => {
           const errorEls = document.querySelectorAll('[class*="error"], [class*="Error"], [role="alert"], [data-testid="error"]');
           for (const el of errorEls) {
             const text = el.textContent.trim();
-            // Ignore generic cookie consent texts
             if (text.length > 0 && text.length < 150 && !text.includes('cookie')) return text;
           }
           return null;
         });
 
-        if (errorText) break; // Found an error, stop waiting
+        if (errorText) break;
       }
 
       if (errorText) {
         console.error(`[OlxSession] Login error: ${errorText}`);
+        try { await browser.page.screenshot({ path: join(DATA_DIR, 'olx_debug_error.png') }); } catch(e) {}
         return { success: false, cookieCount: 0, error: `OLX login error: ${errorText}` };
       }
 
       if (isStillOnLogin) {
-        console.error('[OlxSession] Login failed — timeout. Still on login page.');
-        return { success: false, cookieCount: 0, error: 'Login timeout - posibill CAPTCHA nerezolvat la timp sau altă eroare.' };
+        console.error('[OlxSession] Login failed — timeout, still on login page.');
+        try { await browser.page.screenshot({ path: join(DATA_DIR, 'olx_debug_timeout.png') }); } catch(e) {}
+        return { success: false, cookieCount: 0, error: 'Login timeout — posibil CAPTCHA sau altă problemă.' };
       }
 
       // Extract and save cookies
       const cookies = await browser.page.cookies();
       console.log(`[OlxSession] Login successful! Extracted ${cookies.length} cookies`);
 
-      // Save to disk
       const sessionData = {
         cookies,
         loginDate: new Date().toISOString(),
-        email: email.replace(/(.{2}).+(@.+)/, '$1***$2'), // Masked for logs
+        email: email.replace(/(.{2}).+(@.+)/, '$1***$2'),
         userAgent: await browser.page.evaluate(() => navigator.userAgent),
       };
 
-      // Ensure data dir exists
-      const dataDir = dirname(SESSION_FILE);
-      if (!existsSync(dataDir)) {
-        mkdirSync(dataDir, { recursive: true });
+      if (!existsSync(DATA_DIR)) {
+        mkdirSync(DATA_DIR, { recursive: true });
       }
 
       writeFileSync(SESSION_FILE, JSON.stringify(sessionData, null, 2), 'utf8');
