@@ -42,6 +42,16 @@ class StealthBrowser {
       '--window-size=1366,768',
     ];
 
+    // Linux VPS without display server: Chrome needs GPU-disable flags
+    if (process.platform === 'linux' && !process.env.DISPLAY) {
+      args.push(
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-dev-shm-usage',
+        '--ozone-platform=headless',
+      );
+    }
+
     if (proxy) {
       args.push(`--proxy-server=${proxy.protocol || 'http'}://${proxy.host}:${proxy.port}`);
     }

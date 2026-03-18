@@ -68,7 +68,8 @@ function ensureDisplay() {
     xvfb.unref();
     
     // Give it a moment to start
-    execSync('sleep 0.5');
+    const waitUntil = Date.now() + 500;
+    while (Date.now() < waitUntil) { /* busy-wait 500ms */ }
     
     process.env.DISPLAY = display;
     console.log(`[OlxSession] Xvfb started on ${display}`);
