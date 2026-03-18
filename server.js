@@ -43,6 +43,7 @@ import createLeadsRoutes from './src/routes/leads.routes.js';
 import createMessagesRoutes from './src/routes/messages.routes.js';
 import createConfigRoutes from './src/routes/config.routes.js';
 import createAuthRoutes from './src/routes/auth.routes.js';
+import createSessionRoutes from './src/routes/session.routes.js';
 
 // ═════════════════════════════════════════════════════════════════════════════
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -137,6 +138,7 @@ setupEmailHandler(agentmail, gemini);
   app.use('/api', createLeadsRoutes(deps));
   app.use('/api', createMessagesRoutes(deps));
   app.use('/api', createConfigRoutes({ ...deps, revealRouter, batchRouter }));
+  app.use('/api', createSessionRoutes());
 
   // Serve frontend
   const distPath = join(__dirname, 'dist');

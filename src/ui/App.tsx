@@ -225,11 +225,11 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
               onClick={() => setIsMobileMenuOpen(false)}
             />
             <motion.aside
-              initial={{ x: -280 }}
+              initial={{ x: 280 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              exit={{ x: 280 }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed top-0 left-0 h-full w-64 bg-[#0D0D0E] border-r border-zinc-800 z-50 lg:hidden flex flex-col"
+              className="fixed top-0 right-0 h-full w-64 bg-[#0D0D0E] border-l border-zinc-800 z-50 lg:hidden flex flex-col"
             >
               <div className="p-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -243,7 +243,7 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
                 </button>
               </div>
               <nav className="flex-1 px-4 space-y-1">
-                {navItems.map(item => (
+                {navItems.filter(item => ['dashboard', 'leads'].includes(item.id)).map(item => (
                   <NavItem
                     key={item.id}
                     icon={item.icon}
@@ -281,12 +281,6 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 lg:px-8 bg-[#0D0D0E]/50 backdrop-blur-xl flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 hover:bg-zinc-800 rounded-lg"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
             <h1 className="text-lg font-bold">{navItems.find(n => n.id === activeTab)?.label || 'Settings'}</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -337,7 +331,7 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
         </div>
 
         <div className="lg:hidden fixed bottom-0 inset-x-0 h-20 bg-[#0D0D0E]/80 backdrop-blur-xl border-t border-zinc-800 flex items-center justify-around px-4 z-30">
-          {navItems.map(item => (
+          {navItems.filter(item => ['orchestrator', 'inbox', 'offers', 'database'].includes(item.id)).map(item => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
@@ -349,6 +343,15 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
               <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           ))}
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex flex-col items-center gap-1 transition-colors text-zinc-500 hover:text-indigo-400"
+          >
+            <div className="p-2 rounded-xl transition-colors">
+              <Menu className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-medium">Meniu</span>
+          </button>
         </div>
       </main>
     </div>

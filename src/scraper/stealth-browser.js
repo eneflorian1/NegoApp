@@ -86,6 +86,17 @@ class StealthBrowser {
   }
 
   /**
+   * Inject cookies into the browser page (for authenticated sessions)
+   * Must be called AFTER launch() and BEFORE goto()
+   * @param {Array} cookies - Array of cookie objects from page.cookies()
+   */
+  async injectCookies(cookies) {
+    if (!this.page || !cookies || cookies.length === 0) return;
+    await this.page.setCookie(...cookies);
+    console.log(`[StealthBrowser] Injected ${cookies.length} cookies`);
+  }
+
+  /**
    * Navigate to URL with human-like behavior
    */
   async goto(url, options = {}) {

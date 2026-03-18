@@ -17,6 +17,7 @@
  */
 
 import { StealthBrowser, sleep } from './stealth-browser.js';
+import OlxSession from './olx-session.js';
 
 // Listing data selectors per platform
 const LISTING_SELECTORS = {
@@ -67,6 +68,17 @@ class PhoneRevealer {
       await browser.launch(proxy, {
         headless: options.headless !== false ? 'new' : false,
       });
+
+      // Inject OLX session cookies if available (authenticated = all phones visible)
+      if (url.includes('olx.ro')) {
+        const cookies = OlxSession.getCookies();
+        if (cookies) {
+          await browser.injectCookies(cookies);
+          console.log('[Reveal] OLX session cookies injected — authenticated mode');
+        } else {
+          console.log('[Reveal] No OLX session — anonymous mode (limited phone visibility)');
+        }
+      }
 
       // Setup network interception for phone API calls
       let apiPhone = null;

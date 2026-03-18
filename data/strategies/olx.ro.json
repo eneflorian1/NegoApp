@@ -4,6 +4,10 @@
   "lastUpdated": "2026-03-18",
   "successRate": 0.7737383218761242,
   "status": "degraded",
+  "auth": {
+    "type": "cookie_session",
+    "sessionFile": "data/olx_session.json"
+  },
   "phoneReveal": {
     "approach": "click_button",
     "strategies": [
