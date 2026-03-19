@@ -245,25 +245,26 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     if (vbPollRef.current) { clearInterval(vbPollRef.current); vbPollRef.current = null; }
   };
 
+  const vbApplyResponse = async (data: any) => {
+    if (data.screenshot) setVbScreenshot(data.screenshot);
+    if (data.status) setVbStatus(data.status as any);
+    if (data.status === 'loggedIn') {
+      vbStopPolling();
+      const statusRes = await fetch('/api/session/olx/status', { credentials: 'include' });
+      setOlxStatus(await statusRes.json());
+      setTimeout(() => { setVbOpen(false); setVbSessionId(null); setVbScreenshot(null); setVbStatus(null); }, 2500);
+    }
+  };
+
   const vbStartPolling = (sessionId: string) => {
     vbStopPolling();
     vbPollRef.current = setInterval(async () => {
       try {
         const res = await fetch(`/api/session/olx/vb/${sessionId}/screenshot`, { credentials: 'include' });
         if (!res.ok) { vbStopPolling(); return; }
-        const data = await res.json();
-        if (data.screenshot) setVbScreenshot(data.screenshot);
-        if (data.status) setVbStatus(data.status as any);
-        if (data.status === 'loggedIn') {
-          vbStopPolling();
-          // Refresh OLX session status
-          const statusRes = await fetch('/api/session/olx/status', { credentials: 'include' });
-          setOlxStatus(await statusRes.json());
-          setTimeout(() => { setVbOpen(false); setVbSessionId(null); setVbScreenshot(null); setVbStatus(null); }, 2000);
-        }
-        if (data.status === 'closed') vbStopPolling();
+        await vbApplyResponse(await res.json());
       } catch {}
-    }, 1000);
+    }, 1200);
   };
 
   const handleVbOpen = async () => {
@@ -301,6 +302,25 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     setVbTypeText('');
   };
 
+  const handleVbAutofill = async () => {
+    if (!vbSessionId || !olxEmail || !olxPassword) return;
+    setVbLoading(true);
+    try {
+      const res = await fetch(`/api/session/olx/vb/${vbSessionId}/autofill`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: olxEmail, password: olxPassword }),
+      });
+      const data = await res.json();
+      await vbApplyResponse(data);
+      if (!data.ok && data.error) setVbError(data.error);
+    } catch (err: any) {
+      setVbError(err.message);
+    } finally {
+      setVbLoading(false);
+    }
+  };
+
   const handleVbClick = async (e: React.MouseEvent<HTMLImageElement> | React.TouchEvent<HTMLImageElement>) => {
     if (!vbSessionId || vbStatus !== 'ready') return;
     const img = vbImgRef.current;
@@ -320,9 +340,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ x: cx, y: cy, displayW: rect.width, displayH: rect.height }),
       });
-      const data = await res.json();
-      if (data.screenshot) setVbScreenshot(data.screenshot);
-      if (data.status) setVbStatus(data.status as any);
+      await vbApplyResponse(await res.json());
     } catch {}
   };
 
@@ -336,8 +354,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
-      const data = await res.json();
-      if (data.screenshot) setVbScreenshot(data.screenshot);
+      await vbApplyResponse(await res.json());
     } catch {}
   };
 
@@ -349,9 +366,19 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key }),
       });
-      const data = await res.json();
-      if (data.screenshot) setVbScreenshot(data.screenshot);
-      if (data.status) setVbStatus(data.status as any);
+      await vbApplyResponse(await res.json());
+    } catch {}
+  };
+
+  const handleVbScroll = async (deltaY: number) => {
+    if (!vbSessionId) return;
+    try {
+      const res = await fetch(`/api/session/olx/vb/${vbSessionId}/scroll`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deltaY }),
+      });
+      await vbApplyResponse(await res.json());
     } catch {}
   };
 
@@ -802,16 +829,16 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex flex-col bg-zinc-950/95 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex flex-col bg-zinc-950"
             >
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-blue-400" />
                   <span className="font-medium text-sm">Login OLX</span>
-                  {vbStatus === 'starting' && <span className="text-[10px] text-amber-400 animate-pulse">pornire browser...</span>}
-                  {vbStatus === 'ready' && <span className="text-[10px] text-emerald-400">● activ</span>}
-                  {vbStatus === 'loggedIn' && <span className="text-[10px] text-emerald-400 animate-pulse">✓ autentificat!</span>}
+                  {vbStatus === 'starting' && <span className="text-[10px] text-amber-400 animate-pulse ml-1">pornire...</span>}
+                  {vbStatus === 'ready' && <span className="text-[10px] text-emerald-400 ml-1">● activ</span>}
+                  {vbStatus === 'loggedIn' && <span className="text-[10px] text-emerald-400 animate-pulse ml-1">✓ autentificat!</span>}
                 </div>
                 <button onClick={handleVbClose} className="p-2 text-zinc-500 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
@@ -820,19 +847,52 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
 
               {/* Error */}
               {vbError && (
-                <div className="mx-4 mt-3 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 flex-shrink-0">
+                <div className="mx-3 mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 flex-shrink-0">
                   <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                   <p className="text-xs text-red-400">{vbError}</p>
                 </div>
               )}
 
+              {/* ── Autofill panel — shown when browser is ready and not yet logged in ── */}
+              {vbStatus === 'ready' && (
+                <div className="flex-shrink-0 px-3 pt-3 pb-2 space-y-2 border-b border-zinc-800/60">
+                  <p className="text-[10px] text-zinc-500 font-semibold uppercase">Completare automată</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={olxEmail}
+                      onChange={(e) => setOlxEmail(e.target.value)}
+                      placeholder="email@olx.ro"
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <input
+                      type="password"
+                      value={olxPassword}
+                      onChange={(e) => setOlxPassword(e.target.value)}
+                      placeholder="parolă"
+                      onKeyDown={(e) => e.key === 'Enter' && handleVbAutofill()}
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <button
+                      onClick={handleVbAutofill}
+                      disabled={vbLoading || !olxEmail || !olxPassword}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 rounded-xl text-sm font-semibold text-white transition-colors whitespace-nowrap flex items-center gap-1.5"
+                    >
+                      {vbLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                      Login
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-zinc-600">Serverul completează câmpurile automat · Atinge ecranul dacă apare CAPTCHA</p>
+                </div>
+              )}
+
               {/* Screenshot area */}
-              <div className="flex-1 flex items-center justify-center overflow-hidden p-2 min-h-0">
-                {vbLoading || (!vbScreenshot && vbStatus === 'starting') ? (
+              <div className="flex-1 flex items-center justify-center overflow-hidden min-h-0 relative">
+                {vbLoading && !vbScreenshot ? (
                   <div className="flex flex-col items-center gap-3 text-zinc-500">
                     <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
                     <p className="text-sm">Se deschide browserul...</p>
-                    <p className="text-xs text-zinc-600">Poate dura 10-20 secunde</p>
+                    <p className="text-xs text-zinc-600">Poate dura 15-25 secunde</p>
                   </div>
                 ) : vbStatus === 'loggedIn' ? (
                   <div className="flex flex-col items-center gap-3">
@@ -843,16 +903,25 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                     <p className="text-xs text-zinc-500">Sesiunea OLX a fost salvată automat.</p>
                   </div>
                 ) : vbScreenshot ? (
-                  <img
-                    ref={vbImgRef}
-                    src={`data:image/jpeg;base64,${vbScreenshot}`}
-                    alt="OLX browser"
-                    className="max-w-full max-h-full object-contain rounded-lg cursor-crosshair select-none"
-                    style={{ touchAction: 'none' }}
-                    onClick={handleVbClick}
-                    onTouchStart={handleVbClick}
-                    draggable={false}
-                  />
+                  <>
+                    <img
+                      ref={vbImgRef}
+                      src={`data:image/jpeg;base64,${vbScreenshot}`}
+                      alt="OLX browser"
+                      className="max-w-full max-h-full object-contain cursor-crosshair select-none"
+                      style={{ touchAction: 'none' }}
+                      onClick={handleVbClick}
+                      onTouchStart={handleVbClick}
+                      draggable={false}
+                    />
+                    {/* Scroll overlay buttons */}
+                    {vbStatus === 'ready' && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                        <button onClick={() => handleVbScroll(-300)} className="p-2 bg-zinc-800/80 hover:bg-zinc-700 rounded-lg text-zinc-400 text-xs">▲</button>
+                        <button onClick={() => handleVbScroll(300)} className="p-2 bg-zinc-800/80 hover:bg-zinc-700 rounded-lg text-zinc-400 text-xs">▼</button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-zinc-600">
                     <Monitor className="w-8 h-8" />
@@ -861,44 +930,28 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 )}
               </div>
 
-              {/* Bottom bar: type + actions */}
+              {/* Bottom bar: manual type + keys — for CAPTCHA interaction */}
               {vbStatus === 'ready' && (
-                <div className="flex-shrink-0 border-t border-zinc-800 p-3 space-y-2">
-                  <p className="text-[10px] text-zinc-600 text-center">Atinge ecranul pentru click · Scrie mai jos și apasă Trimite</p>
+                <div className="flex-shrink-0 border-t border-zinc-800 px-3 py-2 space-y-1.5">
+                  <p className="text-[10px] text-zinc-600 text-center">Interacțiune manuală (pentru CAPTCHA)</p>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={vbTypeText}
                       onChange={(e) => setVbTypeText(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleVbType(); }}
-                      placeholder="Scrie text (email, parolă...)"
-                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                      placeholder="Text manual..."
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                     />
-                    <button
-                      onClick={handleVbType}
-                      disabled={!vbTypeText.trim()}
-                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 rounded-xl text-sm font-medium text-white transition-colors"
-                    >
-                      Trimite
-                    </button>
+                    <button onClick={handleVbType} disabled={!vbTypeText.trim()} className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 rounded-xl text-sm text-zinc-200 transition-colors">Trimite</button>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleVbKey('Tab')}
-                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
-                    >Tab</button>
-                    <button
-                      onClick={() => handleVbKey('Enter')}
-                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
-                    >Enter</button>
-                    <button
-                      onClick={() => handleVbKey('Backspace')}
-                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
-                    >⌫</button>
-                    <button
-                      onClick={() => handleVbKey('Escape')}
-                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
-                    >Esc</button>
+                  <div className="flex gap-1.5">
+                    {(['Tab', 'Enter', 'Backspace', 'Escape'] as const).map(k => (
+                      <button key={k} onClick={() => handleVbKey(k)}
+                        className="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-[11px] text-zinc-400 transition-colors">
+                        {k === 'Backspace' ? '⌫' : k}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}

@@ -146,6 +146,41 @@ export default function createSessionRoutes() {
   });
 
   /**
+   * POST /api/session/olx/vb/:id/autofill
+   * Body: { email, password }
+   * Puppeteer fills and submits the OLX login form automatically.
+   */
+  router.post('/session/olx/vb/:id/autofill', async (req, res) => {
+    const session = getVirtualSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session expired or not found' });
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    try {
+      const result = await session.autofill(email, password);
+      const screenshot = await session.screenshot();
+      res.json({ ...result, screenshot, status: session.status });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/session/olx/vb/:id/scroll
+   * Body: { deltaY } — positive = down, negative = up
+   */
+  router.post('/session/olx/vb/:id/scroll', async (req, res) => {
+    const session = getVirtualSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session expired or not found' });
+    try {
+      await session.scroll(req.body.deltaY || 300);
+      const screenshot = await session.screenshot();
+      res.json({ screenshot, status: session.status });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
    * POST /api/session/olx/vb/:id/close
    */
   router.post('/session/olx/vb/:id/close', async (req, res) => {
