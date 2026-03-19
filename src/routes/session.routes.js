@@ -3,13 +3,62 @@
  * Manages OLX session login, import, and status
  */
 import { Router } from 'express';
+import { randomBytes } from 'crypto';
 import { requireAuth } from '../middleware/auth.js';
 import OlxSession from '../scraper/olx-session.js';
 import { createVirtualSession, getVirtualSession } from '../scraper/olx-virtual-browser.js';
 
+// One-time tokens for browser cookie drop (token → { createdAt })
+const grabTokens = new Map();
+const TOKEN_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 export default function createSessionRoutes() {
   const router = Router();
+
+  // ── Public endpoint: receive cookies from user's browser (OLX domain) ────
+  // No auth required — validated via one-time token instead
+  router.post('/session/olx/cookie-drop', (req, res) => {
+    const { token, cookies } = req.body;
+    if (!token || !cookies) {
+      return res.status(400).json({ success: false, error: 'Token and cookies are required' });
+    }
+    const entry = grabTokens.get(token);
+    if (!entry) {
+      return res.status(403).json({ success: false, error: 'Token invalid or expired' });
+    }
+    // Single-use: delete immediately
+    grabTokens.delete(token);
+
+    if (Date.now() - entry.createdAt > TOKEN_TTL_MS) {
+      return res.status(403).json({ success: false, error: 'Token expired' });
+    }
+
+    try {
+      const result = OlxSession.importCookies(cookies);
+      console.log(`[CookieDrop] ✅ Received ${result.cookieCount || 0} cookies from user browser`);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // ── All remaining endpoints require auth ──────────────────────────────────
   router.use(requireAuth);
+
+  /**
+   * POST /api/session/olx/grab-token
+   * Generates a one-time token for the cookie-drop script
+   */
+  router.post('/session/olx/grab-token', (req, res) => {
+    // Clean expired tokens
+    const now = Date.now();
+    for (const [t, v] of grabTokens) {
+      if (now - v.createdAt > TOKEN_TTL_MS) grabTokens.delete(t);
+    }
+    const token = randomBytes(24).toString('hex');
+    grabTokens.set(token, { createdAt: now });
+    res.json({ token });
+  });
 
   let loginInProgress = false;
 

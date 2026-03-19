@@ -9,6 +9,7 @@
 import { StealthBrowser, sleep } from './stealth-browser.js';
 import OlxSession from './olx-session.js';
 import { randomBytes } from 'crypto';
+import { execSync, spawn } from 'child_process';
 
 const sessions = new Map();
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -16,6 +17,37 @@ const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 // Wider viewport so CAPTCHA modals fit
 const VP_W = 1280;
 const VP_H = 900;
+
+/**
+ * Ensure a display is available for non-headless Chrome on Linux VPS.
+ * On Windows this is a no-op.
+ */
+function ensureDisplay() {
+  if (process.platform === 'win32') return null;
+  if (process.env.DISPLAY) return null;
+
+  try { execSync('which Xvfb', { stdio: 'ignore' }); } catch {
+    console.warn('[VirtualBrowser] Xvfb not found — falling back to headless');
+    return null;
+  }
+
+  const display = ':98';
+  try {
+    try { execSync(`kill $(cat /tmp/.X98-lock 2>/dev/null) 2>/dev/null`, { stdio: 'ignore' }); } catch {}
+    const xvfb = spawn('Xvfb', [display, '-screen', '0', `${VP_W}x${VP_H}x24`, '-ac'], {
+      stdio: 'ignore', detached: true,
+    });
+    xvfb.unref();
+    const until = Date.now() + 600;
+    while (Date.now() < until) { /* wait */ }
+    process.env.DISPLAY = display;
+    console.log(`[VirtualBrowser] Xvfb started on ${display}`);
+    return xvfb;
+  } catch (e) {
+    console.error('[VirtualBrowser] Failed to start Xvfb:', e.message);
+    return null;
+  }
+}
 
 const SELECTORS = {
   email: '#username',
@@ -31,10 +63,17 @@ class VirtualSession {
     this.status = 'starting'; // starting | ready | loggedIn | closed
     this._screenshotBusy = false;
     this._timer = null;
+    this._xvfb = null;
   }
 
   async start() {
-    await this.browser.launch(null, { headless: 'new' });
+    // Use real (non-headless) Chrome so CAPTCHA images load and bot detection is bypassed
+    this._xvfb = ensureDisplay();
+    const useHeadless = process.platform !== 'win32' && !process.env.DISPLAY;
+    if (useHeadless) {
+      console.warn('[VirtualBrowser] No display available — using headless fallback');
+    }
+    await this.browser.launch(null, { headless: useHeadless ? 'new' : false });
     await this.browser.page.setViewport({ width: VP_W, height: VP_H });
 
     // Listen for new pages (Google popup, etc.)
@@ -234,6 +273,7 @@ class VirtualSession {
     if (this._timer) clearTimeout(this._timer);
     sessions.delete(this.id);
     try { await this.browser.close(); } catch {}
+    if (this._xvfb) { try { this._xvfb.kill('SIGTERM'); } catch {} }
   }
 }
 

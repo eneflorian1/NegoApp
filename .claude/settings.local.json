@@ -30,7 +30,8 @@
       "Bash(node --check server.js src/routes/config.routes.js src/routes/leads.routes.js src/routes/chat.routes.js src/routes/mission.routes.js src/core/contact-service.js)",
       "Bash(node --check src/channels/whatsapp-handler.js src/core/contact-service.js src/routes/leads.routes.js)",
       "Bash(node:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git -C /c/Users/Admin/Documents/GitHub/NegoApp diff src/scraper/olx-virtual-browser.js)"
     ]
   }
 }
