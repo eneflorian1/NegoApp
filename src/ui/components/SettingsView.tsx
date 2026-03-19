@@ -37,11 +37,6 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
 
   // OLX Browser Login States
   const [browserLoginOpen, setBrowserLoginOpen] = useState(false);
-  const [browserLoginToken, setBrowserLoginToken] = useState<string | null>(null);
-  const [browserLoginScript, setBrowserLoginScript] = useState('');
-  const [browserLoginCopied, setBrowserLoginCopied] = useState(false);
-  const [browserLoginPolling, setBrowserLoginPolling] = useState(false);
-  const browserLoginPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // OLX Virtual Browser States
   const [vbOpen, setVbOpen] = useState(false);
@@ -281,69 +276,6 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     localStorage.setItem('olx_password', olxPassword);
     setOlxCredsSaved(true);
     setTimeout(() => setOlxCredsSaved(false), 2000);
-  };
-
-  // ── Browser Login (user's real browser, real IP) ──────────────────────────
-
-  const handleBrowserLoginStart = async () => {
-    setOlxError(null);
-    setBrowserLoginCopied(false);
-    try {
-      // 1. Get one-time token
-      const res = await fetch('/api/session/olx/grab-token', {
-        method: 'POST', credentials: 'include',
-      });
-      const { token } = await res.json();
-      setBrowserLoginToken(token);
-
-      // 2. Build the script the user will paste in OLX console
-      const serverOrigin = window.location.origin;
-      const script = `fetch('${serverOrigin}/api/session/olx/cookie-drop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:'${token}',cookies:document.cookie})}).then(r=>r.json()).then(d=>{if(d.success)alert('✅ '+d.cookieCount+' cookie-uri trimise! Poți închide acest tab.');else alert('❌ '+d.error)}).catch(()=>alert('❌ Eroare de rețea'))`;
-      setBrowserLoginScript(script);
-
-      // 3. Open OLX in new tab
-      window.open('https://www.olx.ro/cont/', '_blank');
-
-      // 4. Show modal
-      setBrowserLoginOpen(true);
-
-      // 5. Start polling for cookie status (user might run the script any moment)
-      setBrowserLoginPolling(true);
-      if (browserLoginPollRef.current) clearInterval(browserLoginPollRef.current);
-      browserLoginPollRef.current = setInterval(async () => {
-        try {
-          const sRes = await fetch('/api/session/olx/status', { credentials: 'include' });
-          const sData = await sRes.json();
-          if (sData.valid) {
-            setOlxStatus(sData);
-            setBrowserLoginPolling(false);
-            if (browserLoginPollRef.current) { clearInterval(browserLoginPollRef.current); browserLoginPollRef.current = null; }
-            // Auto-close after success
-            setTimeout(() => setBrowserLoginOpen(false), 2000);
-          }
-        } catch {}
-      }, 3000);
-    } catch (err: any) {
-      setOlxError(err.message || 'Eroare la generarea token-ului');
-    }
-  };
-
-  const handleBrowserLoginCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(browserLoginScript);
-      setBrowserLoginCopied(true);
-      setTimeout(() => setBrowserLoginCopied(false), 3000);
-    } catch {
-      // Fallback: select textarea
-    }
-  };
-
-  const handleBrowserLoginClose = () => {
-    setBrowserLoginOpen(false);
-    setBrowserLoginToken(null);
-    setBrowserLoginScript('');
-    setBrowserLoginPolling(false);
-    if (browserLoginPollRef.current) { clearInterval(browserLoginPollRef.current); browserLoginPollRef.current = null; }
   };
 
   const handleVbOpen = async () => {
@@ -893,17 +825,39 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
               )}
 
               {/* ── Connect buttons ── */}
-              <div className="space-y-2">
+              <div className="space-y-3">
+                {/* Browser login: open OLX + paste cookies */}
                 <button
-                  onClick={handleBrowserLoginStart}
+                  onClick={() => { window.open('https://www.olx.ro/cont/', '_blank'); setBrowserLoginOpen(true); }}
                   className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-900/30"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  Loghează-te din browserul tău
+                  Deschide OLX (login din browserul tău)
                 </button>
-                <p className="text-center text-[10px] text-zinc-500">
-                  Se deschide OLX în browser — IP-ul tău real, fără detectare bot
-                </p>
+
+                {browserLoginOpen && (
+                  <div className="space-y-3 p-4 bg-zinc-950 rounded-xl border border-zinc-800">
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      1. Loghează-te pe OLX în tab-ul deschis<br/>
+                      2. După login, copiază cookie-urile (F12 → Console → scrie <code className="px-1 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">document.cookie</code> → Enter → copiază rezultatul)<br/>
+                      3. Lipește cookie-urile aici:
+                    </p>
+                    <textarea
+                      value={olxCookieInput}
+                      onChange={(e) => setOlxCookieInput(e.target.value)}
+                      placeholder='Lipește cookie-urile aici...'
+                      rows={4}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs font-mono text-zinc-300 resize-none focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                    <button
+                      onClick={handleOlxImport}
+                      disabled={!olxCookieInput.trim() || olxImporting}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/40 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+                    >
+                      {olxImporting ? <><Loader2 className="w-4 h-4 animate-spin" /> Se importă...</> : 'Salvează Cookie-urile'}
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-3 py-1">
                   <div className="flex-1 h-px bg-zinc-800" />
@@ -926,118 +880,6 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
             </div>
           )}
         </section>
-
-        {/* ── Browser Login Modal ── */}
-        <AnimatePresence>
-          {browserLoginOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 rounded-2xl border border-zinc-800 max-w-lg w-full overflow-hidden"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4 text-emerald-400" />
-                    <span className="font-medium text-sm">Login din Browserul Tău</span>
-                  </div>
-                  <button onClick={handleBrowserLoginClose} className="p-1.5 text-zinc-500 hover:text-white transition-colors">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Body */}
-                <div className="px-5 py-4 space-y-4">
-                  {olxStatus?.valid ? (
-                    <div className="flex flex-col items-center gap-3 py-4">
-                      <div className="w-14 h-14 bg-emerald-500/10 rounded-full flex items-center justify-center">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                      </div>
-                      <p className="font-semibold text-emerald-400">Cookie-uri primite cu succes!</p>
-                      <p className="text-xs text-zinc-500">Sesiunea OLX a fost salvată.</p>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Steps */}
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
-                          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-emerald-400">1</span>
-                          </div>
-                          <div>
-                            <p className="text-sm text-zinc-300">Loghează-te pe OLX</p>
-                            <p className="text-[11px] text-zinc-500">S-a deschis un tab nou cu OLX. Loghează-te normal cu email și parolă.</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-3">
-                          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-emerald-400">2</span>
-                          </div>
-                          <div>
-                            <p className="text-sm text-zinc-300">Copiază scriptul de mai jos</p>
-                            <p className="text-[11px] text-zinc-500">Apasă butonul "Copiază" pentru a copia scriptul în clipboard.</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-3">
-                          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-xs font-bold text-emerald-400">3</span>
-                          </div>
-                          <div>
-                            <p className="text-sm text-zinc-300">Lipește în consola OLX</p>
-                            <p className="text-[11px] text-zinc-500">Pe tab-ul OLX: apasă <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">F12</kbd> → <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">Console</kbd> → lipește → <kbd className="px-1.5 py-0.5 bg-zinc-800 rounded text-[10px] font-mono">Enter</kbd></p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Script box */}
-                      <div className="relative">
-                        <textarea
-                          readOnly
-                          value={browserLoginScript}
-                          rows={3}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-[11px] font-mono text-zinc-400 resize-none focus:outline-none"
-                        />
-                        <button
-                          onClick={handleBrowserLoginCopy}
-                          className={`absolute top-2 right-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            browserLoginCopied
-                              ? 'bg-emerald-500/20 text-emerald-400'
-                              : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
-                          }`}
-                        >
-                          {browserLoginCopied ? '✓ Copiat!' : 'Copiază'}
-                        </button>
-                      </div>
-
-                      {/* Polling indicator */}
-                      {browserLoginPolling && (
-                        <div className="flex items-center gap-2 text-xs text-zinc-500">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
-                          <span>Aștept cookie-urile... (se detectează automat)</span>
-                        </div>
-                      )}
-
-                      {/* Tip for mobile */}
-                      <div className="px-3 py-2 bg-blue-500/5 border border-blue-500/10 rounded-xl">
-                        <p className="text-[10px] text-blue-400 leading-relaxed">
-                          <strong>Mobil:</strong> Deschide OLX în Chrome desktop mode, loghează-te, apoi în bara de adrese scrie{' '}
-                          <code className="px-1 py-0.5 bg-zinc-800 rounded text-[9px]">javascript:</code> urmat de scriptul copiat.
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* ── Virtual Browser Modal ── */}
         <AnimatePresence>
