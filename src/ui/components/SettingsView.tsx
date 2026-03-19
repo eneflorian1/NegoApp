@@ -25,8 +25,9 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
   const [showAddScenario, setShowAddScenario] = useState(false);
   
   // OLX Session States
-  const [olxEmail, setOlxEmail] = useState('');
-  const [olxPassword, setOlxPassword] = useState('');
+  const [olxEmail, setOlxEmail] = useState(() => localStorage.getItem('olx_email') || '');
+  const [olxPassword, setOlxPassword] = useState(() => localStorage.getItem('olx_password') || '');
+  const [olxCredsSaved, setOlxCredsSaved] = useState(false);
   const [olxConnecting, setOlxConnecting] = useState(false);
   const [olxStatus, setOlxStatus] = useState<{ valid: boolean; cookieCount?: number; loginDate?: string; expiresAt?: string } | null>(null);
   const [olxError, setOlxError] = useState<string | null>(null);
@@ -267,20 +268,44 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     }, 1200);
   };
 
+  const handleSaveOlxCreds = () => {
+    localStorage.setItem('olx_email', olxEmail);
+    localStorage.setItem('olx_password', olxPassword);
+    setOlxCredsSaved(true);
+    setTimeout(() => setOlxCredsSaved(false), 2000);
+  };
+
   const handleVbOpen = async () => {
+    if (!olxEmail || !olxPassword) {
+      setOlxError('Completează email-ul și parola înainte de conectare.');
+      return;
+    }
     setVbOpen(true);
     setVbError(null);
     setVbScreenshot(null);
     setVbStatus('starting');
     setVbLoading(true);
+    const email = olxEmail;
+    const password = olxPassword;
     try {
       const res = await fetch('/api/session/olx/vb/start', { method: 'POST', credentials: 'include' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Nu am putut porni browserul');
-      setVbSessionId(data.sessionId);
+      const sessionId = data.sessionId;
+      setVbSessionId(sessionId);
       setVbStatus(data.status);
       if (data.screenshot) setVbScreenshot(data.screenshot);
-      vbStartPolling(data.sessionId);
+      vbStartPolling(sessionId);
+      // Auto-trigger autofill immediately after browser is ready
+      setVbLoading(true);
+      const fillRes = await fetch(`/api/session/olx/vb/${sessionId}/autofill`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const fillData = await fillRes.json();
+      await vbApplyResponse(fillData);
+      if (!fillData.ok && fillData.error) setVbError(fillData.error);
     } catch (err: any) {
       setVbError(err.message);
       setVbStatus(null);
@@ -757,43 +782,16 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 </div>
               </div>
 
-              {olxError && (
-                <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  <p className="text-[11px] text-red-400">{olxError}</p>
-                </div>
-              )}
-
-              {/* ── Method 1: Virtual Browser (PRIMARY) ── */}
-              <button
-                onClick={handleVbOpen}
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2.5 shadow-lg shadow-blue-900/30"
-              >
-                <Monitor className="w-4 h-4" />
-                Conectează Cont OLX
-              </button>
-              <p className="text-center text-[10px] text-zinc-600">
-                Serverul deschide OLX — tu te loghezi vizual direct în aplicație
-              </p>
-
-              {/* ── Divider ── */}
-              <div className="flex items-center gap-3 pt-1">
-                <div className="flex-1 h-px bg-zinc-800" />
-                <span className="text-[10px] text-zinc-600 uppercase font-bold">sau automat</span>
-                <div className="flex-1 h-px bg-zinc-800" />
-              </div>
-
-              {/* ── Method 2: Auto Login ── */}
+              {/* ── Credentials ── */}
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-zinc-500 uppercase font-bold">Email Cont OLX</label>
                   <input
                     type="email"
                     value={olxEmail}
-                    onChange={(e) => setOlxEmail(e.target.value)}
+                    onChange={(e) => { setOlxEmail(e.target.value); setOlxCredsSaved(false); }}
                     placeholder="email@example.com"
-                    disabled={olxConnecting}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
                 <div>
@@ -801,23 +799,40 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                   <input
                     type="password"
                     value={olxPassword}
-                    onChange={(e) => setOlxPassword(e.target.value)}
+                    onChange={(e) => { setOlxPassword(e.target.value); setOlxCredsSaved(false); }}
                     placeholder="••••••••"
-                    disabled={olxConnecting}
-                    onKeyDown={(e) => e.key === 'Enter' && handleOlxLogin()}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveOlxCreds()}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
                 <button
-                  onClick={handleOlxLogin}
-                  disabled={olxConnecting || !olxEmail || !olxPassword}
+                  onClick={handleSaveOlxCreds}
+                  disabled={!olxEmail || !olxPassword}
                   className="w-full py-2.5 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-700/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-zinc-200 transition-colors flex items-center justify-center gap-2"
                 >
-                  {olxConnecting ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Se autentifică...</>
-                  ) : 'Login Automat (headless)'}
+                  {olxCredsSaved ? <><Check className="w-4 h-4 text-emerald-400" /> Salvat</> : 'Salvează datele'}
                 </button>
               </div>
+
+              {olxError && (
+                <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <p className="text-[11px] text-red-400">{olxError}</p>
+                </div>
+              )}
+
+              {/* ── Connect button ── */}
+              <button
+                onClick={handleVbOpen}
+                disabled={!olxEmail || !olxPassword}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:bg-blue-600/40 disabled:cursor-not-allowed rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2.5 shadow-lg shadow-blue-900/30"
+              >
+                <Monitor className="w-4 h-4" />
+                Conectează Cont OLX
+              </button>
+              <p className="text-center text-[10px] text-zinc-600">
+                Serverul completează datele automat
+              </p>
             </div>
           )}
         </section>
@@ -850,39 +865,6 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 <div className="mx-3 mt-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 flex-shrink-0">
                   <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                   <p className="text-xs text-red-400">{vbError}</p>
-                </div>
-              )}
-
-              {/* ── Autofill panel — shown when browser is ready and not yet logged in ── */}
-              {vbStatus === 'ready' && (
-                <div className="flex-shrink-0 px-3 pt-3 pb-2 space-y-2 border-b border-zinc-800/60">
-                  <p className="text-[10px] text-zinc-500 font-semibold uppercase">Completare automată</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={olxEmail}
-                      onChange={(e) => setOlxEmail(e.target.value)}
-                      placeholder="email@olx.ro"
-                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                    <input
-                      type="password"
-                      value={olxPassword}
-                      onChange={(e) => setOlxPassword(e.target.value)}
-                      placeholder="parolă"
-                      onKeyDown={(e) => e.key === 'Enter' && handleVbAutofill()}
-                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                    />
-                    <button
-                      onClick={handleVbAutofill}
-                      disabled={vbLoading || !olxEmail || !olxPassword}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 rounded-xl text-sm font-semibold text-white transition-colors whitespace-nowrap flex items-center gap-1.5"
-                    >
-                      {vbLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                      Login
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-zinc-600">Serverul completează câmpurile automat · Atinge ecranul dacă apare CAPTCHA</p>
                 </div>
               )}
 
