@@ -5,6 +5,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import OlxSession from '../scraper/olx-session.js';
+import { createVirtualSession, getVirtualSession } from '../scraper/olx-virtual-browser.js';
 
 export default function createSessionRoutes() {
   const router = Router();
@@ -64,6 +65,93 @@ export default function createSessionRoutes() {
   router.get('/session/olx/status', (req, res) => {
     const status = OlxSession.isValid();
     res.json(status);
+  });
+
+  // ── Virtual Browser Endpoints ──────────────────────────────────────────────
+
+  /**
+   * POST /api/session/olx/vb/start
+   * Launches a headless Chrome, navigates to OLX login. Returns sessionId + first screenshot.
+   */
+  router.post('/session/olx/vb/start', async (req, res) => {
+    try {
+      const session = await createVirtualSession();
+      await session.start();
+      const screenshot = await session.screenshot();
+      res.json({ sessionId: session.id, screenshot, status: session.status });
+    } catch (error) {
+      console.error('[VB] start error:', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * GET /api/session/olx/vb/:id/screenshot
+   * Returns the latest screenshot of the virtual browser.
+   */
+  router.get('/session/olx/vb/:id/screenshot', async (req, res) => {
+    const session = getVirtualSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session expired or not found' });
+    const screenshot = await session.screenshot();
+    res.json({ screenshot, status: session.status });
+  });
+
+  /**
+   * POST /api/session/olx/vb/:id/click
+   * Body: { x, y, displayW, displayH }
+   */
+  router.post('/session/olx/vb/:id/click', async (req, res) => {
+    const session = getVirtualSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session expired or not found' });
+    const { x, y, displayW, displayH } = req.body;
+    try {
+      await session.click(x, y, displayW, displayH);
+      const screenshot = await session.screenshot();
+      res.json({ screenshot, status: session.status });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/session/olx/vb/:id/type
+   * Body: { text }
+   */
+  router.post('/session/olx/vb/:id/type', async (req, res) => {
+    const session = getVirtualSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session expired or not found' });
+    try {
+      await session.type(req.body.text || '');
+      const screenshot = await session.screenshot();
+      res.json({ screenshot, status: session.status });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/session/olx/vb/:id/key
+   * Body: { key } — e.g. "Enter", "Tab", "Backspace"
+   */
+  router.post('/session/olx/vb/:id/key', async (req, res) => {
+    const session = getVirtualSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session expired or not found' });
+    try {
+      await session.pressKey(req.body.key || 'Enter');
+      const screenshot = await session.screenshot();
+      res.json({ screenshot, status: session.status });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/session/olx/vb/:id/close
+   */
+  router.post('/session/olx/vb/:id/close', async (req, res) => {
+    const session = getVirtualSession(req.params.id);
+    if (session) await session.close();
+    res.json({ ok: true });
   });
 
   return router;

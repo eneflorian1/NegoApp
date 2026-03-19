@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Settings, Zap, Phone, Mail, CheckCircle2, MessageSquare, TrendingUp, AlertCircle, Loader2, QrCode, Wifi, WifiOff, ChevronDown, RefreshCcw, Plus, Trash2, Pencil, X, Check, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Settings, Zap, Phone, Mail, CheckCircle2, MessageSquare, TrendingUp, AlertCircle, Loader2, QrCode, Wifi, WifiOff, ChevronDown, RefreshCcw, Plus, Trash2, Pencil, X, Check, ShoppingBag, Monitor } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Config, ServiceStatus, CustomScenario } from '../types';
 import { SCENARIOS } from '../constants/scenarios';
@@ -34,7 +34,18 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
   const [olxImporting, setOlxImporting] = useState(false);
   const [olxShowImport, setOlxShowImport] = useState(false);
 
-  const isFirstRender = React.useRef(true);
+  // OLX Virtual Browser States
+  const [vbOpen, setVbOpen] = useState(false);
+  const [vbSessionId, setVbSessionId] = useState<string | null>(null);
+  const [vbScreenshot, setVbScreenshot] = useState<string | null>(null);
+  const [vbStatus, setVbStatus] = useState<'starting' | 'ready' | 'loggedIn' | 'closed' | null>(null);
+  const [vbLoading, setVbLoading] = useState(false);
+  const [vbTypeText, setVbTypeText] = useState('');
+  const [vbError, setVbError] = useState<string | null>(null);
+  const vbPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const vbImgRef = useRef<HTMLImageElement | null>(null);
+
+  const isFirstRender = useRef(true);
 
   // Merge default scenarios with user custom scenarios
   const allScenarios = useMemo(() => {
@@ -226,6 +237,122 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
     } finally {
       setOlxImporting(false);
     }
+  };
+
+  // ── Virtual Browser helpers ──────────────────────────────────────────────
+
+  const vbStopPolling = () => {
+    if (vbPollRef.current) { clearInterval(vbPollRef.current); vbPollRef.current = null; }
+  };
+
+  const vbStartPolling = (sessionId: string) => {
+    vbStopPolling();
+    vbPollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/session/olx/vb/${sessionId}/screenshot`, { credentials: 'include' });
+        if (!res.ok) { vbStopPolling(); return; }
+        const data = await res.json();
+        if (data.screenshot) setVbScreenshot(data.screenshot);
+        if (data.status) setVbStatus(data.status as any);
+        if (data.status === 'loggedIn') {
+          vbStopPolling();
+          // Refresh OLX session status
+          const statusRes = await fetch('/api/session/olx/status', { credentials: 'include' });
+          setOlxStatus(await statusRes.json());
+          setTimeout(() => { setVbOpen(false); setVbSessionId(null); setVbScreenshot(null); setVbStatus(null); }, 2000);
+        }
+        if (data.status === 'closed') vbStopPolling();
+      } catch {}
+    }, 1000);
+  };
+
+  const handleVbOpen = async () => {
+    setVbOpen(true);
+    setVbError(null);
+    setVbScreenshot(null);
+    setVbStatus('starting');
+    setVbLoading(true);
+    try {
+      const res = await fetch('/api/session/olx/vb/start', { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Nu am putut porni browserul');
+      setVbSessionId(data.sessionId);
+      setVbStatus(data.status);
+      if (data.screenshot) setVbScreenshot(data.screenshot);
+      vbStartPolling(data.sessionId);
+    } catch (err: any) {
+      setVbError(err.message);
+      setVbStatus(null);
+    } finally {
+      setVbLoading(false);
+    }
+  };
+
+  const handleVbClose = async () => {
+    vbStopPolling();
+    if (vbSessionId) {
+      fetch(`/api/session/olx/vb/${vbSessionId}/close`, { method: 'POST', credentials: 'include' }).catch(() => {});
+    }
+    setVbOpen(false);
+    setVbSessionId(null);
+    setVbScreenshot(null);
+    setVbStatus(null);
+    setVbError(null);
+    setVbTypeText('');
+  };
+
+  const handleVbClick = async (e: React.MouseEvent<HTMLImageElement> | React.TouchEvent<HTMLImageElement>) => {
+    if (!vbSessionId || vbStatus !== 'ready') return;
+    const img = vbImgRef.current;
+    if (!img) return;
+    const rect = img.getBoundingClientRect();
+    let cx: number, cy: number;
+    if ('touches' in e) {
+      cx = e.touches[0].clientX - rect.left;
+      cy = e.touches[0].clientY - rect.top;
+    } else {
+      cx = (e as React.MouseEvent).clientX - rect.left;
+      cy = (e as React.MouseEvent).clientY - rect.top;
+    }
+    try {
+      const res = await fetch(`/api/session/olx/vb/${vbSessionId}/click`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ x: cx, y: cy, displayW: rect.width, displayH: rect.height }),
+      });
+      const data = await res.json();
+      if (data.screenshot) setVbScreenshot(data.screenshot);
+      if (data.status) setVbStatus(data.status as any);
+    } catch {}
+  };
+
+  const handleVbType = async () => {
+    if (!vbSessionId || !vbTypeText.trim()) return;
+    const text = vbTypeText;
+    setVbTypeText('');
+    try {
+      const res = await fetch(`/api/session/olx/vb/${vbSessionId}/type`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (data.screenshot) setVbScreenshot(data.screenshot);
+    } catch {}
+  };
+
+  const handleVbKey = async (key: string) => {
+    if (!vbSessionId) return;
+    try {
+      const res = await fetch(`/api/session/olx/vb/${vbSessionId}/key`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      const data = await res.json();
+      if (data.screenshot) setVbScreenshot(data.screenshot);
+      if (data.status) setVbStatus(data.status as any);
+    } catch {}
   };
 
   const waStatus = serviceStatus?.whatsapp;
@@ -579,7 +706,7 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                   <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                 </div>
                 <div>
-                  <p className="font-medium text-emerald-400">Authenticated (Persistent Session)</p>
+                  <p className="font-medium text-emerald-400">Autentificat (Sesiune Activă)</p>
                   <p className="text-xs text-zinc-500">
                     {olxStatus.cookieCount} cookies · {new Date(olxStatus.loginDate || Date.now()).toLocaleDateString()}
                   </p>
@@ -610,7 +737,26 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 </div>
               )}
 
-              {/* ── Method 1: Auto Login ── */}
+              {/* ── Method 1: Virtual Browser (PRIMARY) ── */}
+              <button
+                onClick={handleVbOpen}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2.5 shadow-lg shadow-blue-900/30"
+              >
+                <Monitor className="w-4 h-4" />
+                Conectează Cont OLX
+              </button>
+              <p className="text-center text-[10px] text-zinc-600">
+                Serverul deschide OLX — tu te loghezi vizual direct în aplicație
+              </p>
+
+              {/* ── Divider ── */}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="flex-1 h-px bg-zinc-800" />
+                <span className="text-[10px] text-zinc-600 uppercase font-bold">sau automat</span>
+                <div className="flex-1 h-px bg-zinc-800" />
+              </div>
+
+              {/* ── Method 2: Auto Login ── */}
               <div className="space-y-3">
                 <div>
                   <label className="text-xs text-zinc-500 uppercase font-bold">Email Cont OLX</label>
@@ -638,71 +784,127 @@ export default function SettingsView({ config, setConfig, serviceStatus, configL
                 <button
                   onClick={handleOlxLogin}
                   disabled={olxConnecting || !olxEmail || !olxPassword}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-700/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-zinc-200 transition-colors flex items-center justify-center gap-2"
                 >
                   {olxConnecting ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Se autentifică...</>
-                  ) : 'Login Automat'}
+                  ) : 'Login Automat (headless)'}
                 </button>
-              </div>
-
-              {/* ── Divider ── */}
-              <div className="flex items-center gap-3 pt-2">
-                <div className="flex-1 h-px bg-zinc-800" />
-                <span className="text-[10px] text-zinc-600 uppercase font-bold">sau</span>
-                <div className="flex-1 h-px bg-zinc-800" />
-              </div>
-
-              {/* ── Method 2: Manual Cookie Import ── */}
-              <div className="space-y-3">
-                <button
-                  onClick={() => setOlxShowImport(!olxShowImport)}
-                  className="w-full text-left px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl text-sm text-zinc-400 transition-colors flex items-center justify-between"
-                >
-                  <span>📋 Import manual cookies (dacă login-ul automat nu merge)</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${olxShowImport ? 'rotate-180' : ''}`} />
-                </button>
-
-                <AnimatePresence>
-                  {olxShowImport && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden space-y-3"
-                    >
-                      <div className="p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50 space-y-3">
-                        <p className="text-[11px] text-zinc-500 leading-relaxed">
-                          <strong className="text-zinc-400">Pași:</strong><br/>
-                          1. Loghează-te pe <a href="https://www.olx.ro/cont/" target="_blank" rel="noreferrer" className="text-blue-400 underline">olx.ro</a> în browserul tău<br/>
-                          2. Apasă <strong className="text-zinc-400">F12</strong> → tab <strong className="text-zinc-400">Console</strong><br/>
-                          3. Scrie <code className="bg-zinc-800 px-1.5 py-0.5 rounded text-blue-300 text-[10px]">document.cookie</code> și apasă Enter<br/>
-                          4. Copiază tot textul rezultat și lipește-l mai jos
-                        </p>
-                        <textarea
-                          value={olxCookieInput}
-                          onChange={(e) => setOlxCookieInput(e.target.value)}
-                          placeholder='Lipește aici cookie-urile copiate...'
-                          disabled={olxImporting}
-                          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs focus:outline-none focus:border-blue-500 transition-colors min-h-[80px] resize-y font-mono disabled:opacity-50"
-                        />
-                        <button
-                          onClick={handleOlxImport}
-                          disabled={olxImporting || !olxCookieInput.trim()}
-                          className="w-full py-2.5 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-700/50 disabled:cursor-not-allowed rounded-xl text-sm font-medium text-zinc-200 transition-colors flex items-center justify-center gap-2"
-                        >
-                          {olxImporting ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" /> Se importă...</>
-                          ) : 'Importă Cookies'}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
           )}
         </section>
+
+        {/* ── Virtual Browser Modal ── */}
+        <AnimatePresence>
+          {vbOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex flex-col bg-zinc-950/95 backdrop-blur-sm"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-blue-400" />
+                  <span className="font-medium text-sm">Login OLX</span>
+                  {vbStatus === 'starting' && <span className="text-[10px] text-amber-400 animate-pulse">pornire browser...</span>}
+                  {vbStatus === 'ready' && <span className="text-[10px] text-emerald-400">● activ</span>}
+                  {vbStatus === 'loggedIn' && <span className="text-[10px] text-emerald-400 animate-pulse">✓ autentificat!</span>}
+                </div>
+                <button onClick={handleVbClose} className="p-2 text-zinc-500 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Error */}
+              {vbError && (
+                <div className="mx-4 mt-3 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 flex-shrink-0">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <p className="text-xs text-red-400">{vbError}</p>
+                </div>
+              )}
+
+              {/* Screenshot area */}
+              <div className="flex-1 flex items-center justify-center overflow-hidden p-2 min-h-0">
+                {vbLoading || (!vbScreenshot && vbStatus === 'starting') ? (
+                  <div className="flex flex-col items-center gap-3 text-zinc-500">
+                    <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                    <p className="text-sm">Se deschide browserul...</p>
+                    <p className="text-xs text-zinc-600">Poate dura 10-20 secunde</p>
+                  </div>
+                ) : vbStatus === 'loggedIn' ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="w-9 h-9 text-emerald-500" />
+                    </div>
+                    <p className="font-semibold text-emerald-400">Autentificat cu succes!</p>
+                    <p className="text-xs text-zinc-500">Sesiunea OLX a fost salvată automat.</p>
+                  </div>
+                ) : vbScreenshot ? (
+                  <img
+                    ref={vbImgRef}
+                    src={`data:image/jpeg;base64,${vbScreenshot}`}
+                    alt="OLX browser"
+                    className="max-w-full max-h-full object-contain rounded-lg cursor-crosshair select-none"
+                    style={{ touchAction: 'none' }}
+                    onClick={handleVbClick}
+                    onTouchStart={handleVbClick}
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-zinc-600">
+                    <Monitor className="w-8 h-8" />
+                    <p className="text-sm">Așteptare browser...</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom bar: type + actions */}
+              {vbStatus === 'ready' && (
+                <div className="flex-shrink-0 border-t border-zinc-800 p-3 space-y-2">
+                  <p className="text-[10px] text-zinc-600 text-center">Atinge ecranul pentru click · Scrie mai jos și apasă Trimite</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={vbTypeText}
+                      onChange={(e) => setVbTypeText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleVbType(); }}
+                      placeholder="Scrie text (email, parolă...)"
+                      className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <button
+                      onClick={handleVbType}
+                      disabled={!vbTypeText.trim()}
+                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 rounded-xl text-sm font-medium text-white transition-colors"
+                    >
+                      Trimite
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleVbKey('Tab')}
+                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
+                    >Tab</button>
+                    <button
+                      onClick={() => handleVbKey('Enter')}
+                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
+                    >Enter</button>
+                    <button
+                      onClick={() => handleVbKey('Backspace')}
+                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
+                    >⌫</button>
+                    <button
+                      onClick={() => handleVbKey('Escape')}
+                      className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs text-zinc-400 transition-colors"
+                    >Esc</button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Custom Scenarios ── */}
         <section className="space-y-4">
