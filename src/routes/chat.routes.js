@@ -29,93 +29,105 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
 
       switch (intent.action) {
         case 'extract_phone': {
-          const url = intent.url;
-          if (!url) { response = { content: 'Am nevoie de un URL de listing. Ex: "Extrage telefonul din https://www.olx.ro/d/oferta/..."', toolCall: null }; break; }
+          const urls = intent.urls && intent.urls.length > 0 ? intent.urls : (intent.url ? [intent.url] : []);
+          if (urls.length === 0) { response = { content: 'Am nevoie de un URL de listing. Ex: "Extrage telefonul din https://www.olx.ro/d/oferta/..."', toolCall: null }; break; }
 
-          const domain = new URL(url).hostname.replace('www.', '');
-          const mission = MissionRepo.create({
-            userId,
-            mode: 'single', platform: domain.includes('olx') ? 'olx' : domain,
-            url, useProxy: intent.useProxy || false, status: 'running', domain, strategy: domain,
-          });
+          const missionIds = [];
+          for (const extractUrl of urls) {
+            const domain = new URL(extractUrl).hostname.replace('www.', '');
+            const mission = MissionRepo.create({
+              userId,
+              mode: 'single', platform: domain.includes('olx') ? 'olx' : domain,
+              url: extractUrl, useProxy: intent.useProxy || false, status: 'running', domain, strategy: domain,
+            });
+            missionIds.push(mission.id);
 
-          (async () => {
-            try {
-              const result = await orchestrator.executeSingleReveal({ url, useProxy: intent.useProxy || false, personality });
-              result.url = url;
-              mission.results = [result];
-              mission.leadsFound = 1;
-              mission.leadsContacted = result.success ? 1 : 0;
-              mission.progress = 100;
-              mission.status = result.success ? 'completed' : 'error';
-              mission.updatedAt = new Date().toISOString();
-              MissionRepo.save();
-              if (result.success) await autoContactSeller(result, { gemini, whatsapp, userId });
-            } catch (err) {
-              mission.status = 'error';
-              mission.results = [{ success: false, error: err.message, url }];
-              mission.updatedAt = new Date().toISOString();
-              MissionRepo.save();
-            }
-          })();
+            (async () => {
+              try {
+                const result = await orchestrator.executeSingleReveal({ url: extractUrl, useProxy: intent.useProxy || false, personality });
+                result.url = extractUrl;
+                mission.results = [result];
+                mission.leadsFound = 1;
+                mission.leadsContacted = result.success ? 1 : 0;
+                mission.progress = 100;
+                mission.status = result.success ? 'completed' : 'error';
+                mission.updatedAt = new Date().toISOString();
+                MissionRepo.save();
+                if (result.success) await autoContactSeller(result, { gemini, whatsapp, userId });
+              } catch (err) {
+                mission.status = 'error';
+                mission.results = [{ success: false, error: err.message, url: extractUrl }];
+                mission.updatedAt = new Date().toISOString();
+                MissionRepo.save();
+              }
+            })();
+          }
 
+          const urlList = urls.map(u => `🔗 ${u}`).join('\n');
           response = {
-            content: `Extrag telefonul din listing...\n\n🔗 ${url}\n\n_Misiune pornită: ${mission.id}_`,
-            toolCall: { name: 'extract_phone', args: { url }, status: 'running' },
-            missionId: mission.id,
+            content: `Extrag telefoanele din ${urls.length} listing${urls.length > 1 ? '-uri' : ''}...\n\n${urlList}\n\n_${missionIds.length} misiuni pornite_`,
+            toolCall: { name: 'extract_phone', args: { urls }, status: 'running' },
+            missionIds,
           };
           break;
         }
 
         case 'scan_category': {
-          const url = intent.url;
-          if (!url) { response = { content: 'Am nevoie de un URL de categorie. Ex: "Scanează https://www.olx.ro/imobiliare/"', toolCall: null }; break; }
-
-          const domain = new URL(url).hostname.replace('www.', '');
-          const mission = MissionRepo.create({
-            userId,
-            mode: 'category', platform: domain.includes('olx') ? 'olx' : domain,
-            url, useProxy: intent.useProxy || false, status: 'running', domain, strategy: domain,
-          });
+          const urls = intent.urls && intent.urls.length > 0 ? intent.urls : (intent.url ? [intent.url] : []);
+          if (urls.length === 0) { response = { content: 'Am nevoie de un URL de categorie. Ex: "Scanează https://www.olx.ro/imobiliare/"', toolCall: null }; break; }
 
           const maxListings = intent.maxListings || 50;
           const maxReveals = intent.maxReveals || 5;
           const maxPages = Math.max(1, Math.ceil(maxListings / 40));
+          const missionIds = [];
 
-          (async () => {
-            try {
-              const fullMission = await orchestrator.executeMission({
-                url, query: '', domain, useProxy: intent.useProxy || false,
-                maxPages, maxListings, maxReveals, personality,
-                onPhoneRevealed: async (result) => {
-                  mission.leadsContacted = (mission.leadsContacted || 0) + 1;
-                  if (!mission.results) mission.results = [];
-                  mission.results.push(result);
-                  mission.updatedAt = new Date().toISOString();
-                  MissionRepo.save();
-                  if (result.phone) await autoContactSeller(result, { gemini, whatsapp, userId });
-                }
-              });
-              mission.results = fullMission.reveals || [];
-              mission.leadsFound = fullMission.listings?.length || 0;
-              mission.leadsContacted = fullMission.phones?.length || 0;
-              mission.progress = 100;
-              mission.status = 'completed';
-              mission.summary = fullMission.summary;
-              mission.updatedAt = new Date().toISOString();
-              MissionRepo.save();
-            } catch (err) {
-              mission.status = 'error';
-              mission.results = [{ success: false, error: err.message }];
-              mission.updatedAt = new Date().toISOString();
-              MissionRepo.save();
-            }
-          })();
+          // Launch a mission for EACH category URL — sequentially to avoid overloading the browser
+          for (const catUrl of urls) {
+            const domain = new URL(catUrl).hostname.replace('www.', '');
+            const mission = MissionRepo.create({
+              userId,
+              mode: 'category', platform: domain.includes('olx') ? 'olx' : domain,
+              url: catUrl, useProxy: intent.useProxy || false, status: 'running', domain, strategy: domain,
+            });
+            missionIds.push(mission.id);
 
+            (async () => {
+              try {
+                const fullMission = await orchestrator.executeMission({
+                  url: catUrl, query: '', domain, useProxy: intent.useProxy || false,
+                  maxPages, maxListings, maxReveals, personality,
+                  geminiClient: userGemini,
+                  onPhoneRevealed: async (result) => {
+                    mission.leadsContacted = (mission.leadsContacted || 0) + 1;
+                    if (!mission.results) mission.results = [];
+                    mission.results.push(result);
+                    mission.updatedAt = new Date().toISOString();
+                    MissionRepo.save();
+                    if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+                  }
+                });
+                mission.results = fullMission.reveals || [];
+                mission.leadsFound = fullMission.listings?.length || 0;
+                mission.leadsContacted = fullMission.phones?.length || 0;
+                mission.progress = 100;
+                mission.status = 'completed';
+                mission.summary = fullMission.summary;
+                mission.updatedAt = new Date().toISOString();
+                MissionRepo.save();
+              } catch (err) {
+                mission.status = 'error';
+                mission.results = [{ success: false, error: err.message }];
+                mission.updatedAt = new Date().toISOString();
+                MissionRepo.save();
+              }
+            })();
+          }
+
+          const urlList = urls.map(u => `📂 ${u}`).join('\n');
           response = {
-            content: `Pornesc scanarea categoriei...\n\n📂 ${url}\n📊 Filtru: ${maxListings} anunțuri, ${maxReveals} reveal-uri\n\n_Misiune pornită: ${mission.id}_`,
-            toolCall: { name: 'scan_category', args: { url, maxPages, maxListings, maxReveals }, status: 'running' },
-            missionId: mission.id,
+            content: `Pornesc scanarea a ${urls.length} categori${urls.length > 1 ? 'i' : 'e'}...\n\n${urlList}\n📊 Filtru: ${maxListings} anunțuri, ${maxReveals} reveal-uri per categorie\n\n_${missionIds.length} misiuni pornite_`,
+            toolCall: { name: 'scan_category', args: { urls, maxPages, maxListings, maxReveals }, status: 'running' },
+            missionIds,
           };
           break;
         }
@@ -192,8 +204,10 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
 
 function detectIntent(message) {
   const msg = message.toLowerCase().trim();
-  const urlMatch = message.match(/(https?:\/\/[^\s]+)/);
-  const url = urlMatch ? urlMatch[1] : null;
+  // Extract ALL URLs from message, not just the first one
+  const urlMatches = [...message.matchAll(/(https?:\/\/[^\s]+)/g)].map(m => m[1]);
+  const url = urlMatches[0] || null;
+  const urls = urlMatches.length > 0 ? urlMatches : [];
   const useProxy = msg.includes('proxy') || msg.includes('ipv6');
   const limitMatch = msg.match(/--limit=(\d+)/);
   const revealsMatch = msg.match(/--reveals=(\d+)/);
@@ -201,18 +215,18 @@ function detectIntent(message) {
   const maxReveals = revealsMatch ? parseInt(revealsMatch[1]) : undefined;
 
   if (url && (msg.includes('extrage') || msg.includes('telefon') || msg.includes('reveal') || msg.includes('phone') || msg.includes('extract') || msg.includes('nr'))) {
-    return { action: 'extract_phone', url, useProxy };
+    return { action: 'extract_phone', url, urls, useProxy };
   }
   if (url && (msg.includes('scan') || msg.includes('categori') || msg.includes('batch') || msg.includes('scanea'))) {
-    return { action: 'scan_category', url, useProxy, maxListings, maxReveals };
+    return { action: 'scan_category', url, urls, useProxy, maxListings, maxReveals };
   }
-  if (url && !msg.includes('analiz')) return { action: 'extract_phone', url, useProxy };
+  if (url && !msg.includes('analiz')) return { action: 'extract_phone', url, urls, useProxy };
   if (msg.includes('analiz') || msg.includes('analyze') || msg.includes('valoare') || msg.includes('pret')) {
-    return { action: 'analyze_listing', url, data: message };
+    return { action: 'analyze_listing', url, urls, data: message };
   }
   if (msg.includes('status') || msg.includes('stare')) return { action: 'check_status' };
   if (msg.includes('misiuni') || msg.includes('missions') || msg.includes('istoric') || msg.includes('history')) return { action: 'list_missions' };
-  return { action: 'general', url };
+  return { action: 'general', url, urls };
 }
 
 function formatAnalysis(analysis) {

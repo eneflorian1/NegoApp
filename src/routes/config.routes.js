@@ -156,47 +156,64 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
     finally { activeCategoryScrape.running = false; }
   });
 
-  // ─── Full Orchestrator ─────────────────────────────────────────────────────
+  // ─── Full Orchestrator (supports multiple URLs) ────────────────────────────
   router.post('/orchestrate/full', async (req, res) => {
     const userId = req.user.id;
-    const { url, query = '', domain: forceDomain, useProxy = false, maxPages = 2, maxListings = 50, maxReveals = 5, personality = 'diplomat' } = req.body;
-    if (!url) return res.status(400).json({ error: 'url is required' });
-    const domain = forceDomain || new URL(url).hostname.replace('www.', '');
-    const mission = MissionRepo.create({
-      userId,
-      mode: 'category', platform: domain.includes('olx') ? 'olx' : domain,
-      url, useProxy, status: 'running', domain, strategy: domain,
-    });
+    const { url, urls: inputUrls, query = '', domain: forceDomain, useProxy = false, maxPages = 2, maxListings = 50, maxReveals = 5, personality = 'diplomat' } = req.body;
 
+    // Support both single `url` and array `urls`
+    const urls = inputUrls && Array.isArray(inputUrls) && inputUrls.length > 0
+      ? inputUrls
+      : (url ? [url] : []);
+
+    if (urls.length === 0) return res.status(400).json({ error: 'url is required (pass url or urls[])' });
+
+    const cfg = ConfigRepo.load(userId);
+    const userGemini = gemini.forKey(cfg.geminiApiKey);
     const waClient = whatsapp.getClient ? whatsapp.getClient(userId) : whatsapp;
+    const missionIds = [];
 
-    orchestrator.executeMission({
-      url, query, domain: forceDomain, useProxy, maxPages, maxListings, maxReveals, personality,
-      onPhoneRevealed: async (result) => {
-        mission.leadsContacted = (mission.leadsContacted || 0) + 1;
-        if (!mission.results) mission.results = [];
-        mission.results.push(result);
+    for (const missionUrl of urls) {
+      let domain;
+      try { domain = forceDomain || new URL(missionUrl).hostname.replace('www.', ''); }
+      catch { continue; }
+
+      const mission = MissionRepo.create({
+        userId,
+        mode: 'category', platform: domain.includes('olx') ? 'olx' : domain,
+        url: missionUrl, useProxy, status: 'running', domain, strategy: domain,
+      });
+      missionIds.push(mission.id);
+
+      orchestrator.executeMission({
+        url: missionUrl, query, domain: forceDomain, useProxy, maxPages, maxListings, maxReveals, personality,
+        geminiClient: userGemini,
+        onPhoneRevealed: async (result) => {
+          mission.leadsContacted = (mission.leadsContacted || 0) + 1;
+          if (!mission.results) mission.results = [];
+          mission.results.push(result);
+          mission.updatedAt = new Date().toISOString();
+          MissionRepo.save();
+          if (result.phone) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
+        }
+      }).then(async (fullMission) => {
+        mission.results = fullMission.reveals || [];
+        mission.leadsFound = fullMission.listings?.length || 0;
+        mission.leadsContacted = fullMission.phones?.length || 0;
+        mission.progress = 100;
+        mission.status = 'completed';
+        mission.summary = fullMission.summary;
         mission.updatedAt = new Date().toISOString();
         MissionRepo.save();
-        if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
-      }
-    }).then(async (fullMission) => {
-      mission.results = fullMission.reveals || [];
-      mission.leadsFound = fullMission.listings?.length || 0;
-      mission.leadsContacted = fullMission.phones?.length || 0;
-      mission.progress = 100;
-      mission.status = 'completed';
-      mission.summary = fullMission.summary;
-      mission.updatedAt = new Date().toISOString();
-      MissionRepo.save();
-    }).catch(err => {
-      mission.status = 'error';
-      mission.results = [{ success: false, error: err.message }];
-      mission.updatedAt = new Date().toISOString();
-      MissionRepo.save();
-    });
+      }).catch(err => {
+        mission.status = 'error';
+        mission.results = [{ success: false, error: err.message }];
+        mission.updatedAt = new Date().toISOString();
+        MissionRepo.save();
+      });
+    }
 
-    res.json({ status: 'started', missionId: mission.id, maxListings, maxPages, maxReveals, message: `Full orchestration mission started. Poll /api/mission/${mission.id} for progress.` });
+    res.json({ status: 'started', missionIds, missionId: missionIds[0], count: missionIds.length, maxListings, maxPages, maxReveals, message: `${missionIds.length} mission(s) started. Poll /api/mission/:id for progress.` });
   });
 
   // ─── Simple Orchestrate ────────────────────────────────────────────────────

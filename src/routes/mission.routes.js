@@ -67,57 +67,68 @@ export default function createMissionRoutes({ orchestrator, gemini, whatsapp }) 
 
   router.post('/orchestrate/full', async (req, res) => {
     const userId = req.user.id;
-    const { url, maxPages = 2, maxListings = 50, maxReveals = 5, useProxy = false } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
+    const { url, urls: inputUrls, maxPages = 2, maxListings = 50, maxReveals = 5, useProxy = false } = req.body;
 
-    let domain;
-    try { domain = new URL(url).hostname.replace('www.', ''); }
-    catch { return res.status(400).json({ error: 'Invalid URL' }); }
+    // Support both single `url` and array `urls`
+    const urls = inputUrls && Array.isArray(inputUrls) && inputUrls.length > 0
+      ? inputUrls
+      : (url ? [url] : []);
 
-    // Load user's Gemini API key from DB (Settings)
+    if (urls.length === 0) return res.status(400).json({ error: 'URL is required (pass url or urls[])' });
+
+    // Validate all URLs
+    for (const u of urls) {
+      try { new URL(u); } catch { return res.status(400).json({ error: `Invalid URL: ${u}` }); }
+    }
+
     const cfg = ConfigRepo.load(userId);
     const userGemini = gemini.forKey(cfg.geminiApiKey);
-
-    const mission = MissionRepo.create({
-      userId,
-      mode: 'category',
-      platform: domain.includes('olx') ? 'olx' : domain,
-      url, useProxy, status: 'running', domain, strategy: domain,
-    });
-
     const waClient = whatsapp.getClient ? whatsapp.getClient(userId) : whatsapp;
 
-    (async () => {
-      try {
-        const fullMission = await orchestrator.executeMission({
-          url, domain, useProxy, maxPages, maxListings, maxReveals,
-          geminiClient: userGemini,
-          onPhoneRevealed: async (result) => {
-            mission.leadsContacted = (mission.leadsContacted || 0) + 1;
-            if (!mission.results) mission.results = [];
-            mission.results.push(result);
-            mission.updatedAt = new Date().toISOString();
-            MissionRepo.save();
-            if (result.phone) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
-          },
-        });
-        mission.results = fullMission.reveals || [];
-        mission.leadsFound = fullMission.listings?.length || 0;
-        mission.leadsContacted = fullMission.phones?.length || 0;
-        mission.progress = 100;
-        mission.status = 'completed';
-        mission.summary = fullMission.summary;
-        mission.updatedAt = new Date().toISOString();
-        MissionRepo.save();
-      } catch (err) {
-        mission.status = 'error';
-        mission.results = [{ success: false, error: err.message }];
-        mission.updatedAt = new Date().toISOString();
-        MissionRepo.save();
-      }
-    })();
+    const missionIds = [];
 
-    res.json({ missionId: mission.id, status: 'started' });
+    for (const missionUrl of urls) {
+      const domain = new URL(missionUrl).hostname.replace('www.', '');
+      const mission = MissionRepo.create({
+        userId,
+        mode: 'category',
+        platform: domain.includes('olx') ? 'olx' : domain,
+        url: missionUrl, useProxy, status: 'running', domain, strategy: domain,
+      });
+      missionIds.push(mission.id);
+
+      (async () => {
+        try {
+          const fullMission = await orchestrator.executeMission({
+            url: missionUrl, domain, useProxy, maxPages, maxListings, maxReveals,
+            geminiClient: userGemini,
+            onPhoneRevealed: async (result) => {
+              mission.leadsContacted = (mission.leadsContacted || 0) + 1;
+              if (!mission.results) mission.results = [];
+              mission.results.push(result);
+              mission.updatedAt = new Date().toISOString();
+              MissionRepo.save();
+              if (result.phone) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
+            },
+          });
+          mission.results = fullMission.reveals || [];
+          mission.leadsFound = fullMission.listings?.length || 0;
+          mission.leadsContacted = fullMission.phones?.length || 0;
+          mission.progress = 100;
+          mission.status = 'completed';
+          mission.summary = fullMission.summary;
+          mission.updatedAt = new Date().toISOString();
+          MissionRepo.save();
+        } catch (err) {
+          mission.status = 'error';
+          mission.results = [{ success: false, error: err.message }];
+          mission.updatedAt = new Date().toISOString();
+          MissionRepo.save();
+        }
+      })();
+    }
+
+    res.json({ missionIds, missionId: missionIds[0], status: 'started', count: missionIds.length });
   });
 
   router.get('/missions/stats', (req, res) => {

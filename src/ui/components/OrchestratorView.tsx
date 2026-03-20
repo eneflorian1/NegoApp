@@ -512,22 +512,37 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
 
   const preset = CATEGORY_PRESETS[selectedPreset];
 
+  // Parse URLs from input (supports multiple URLs separated by newlines, commas, or spaces)
+  function parseUrls(input: string): string[] {
+    return input
+      .split(/[\n,]+/)
+      .map(s => s.trim())
+      .filter(s => s.startsWith('http'));
+  }
+
   async function handleDeploy() {
     if (!url.trim()) return;
 
+    const urls = parseUrls(url);
+    if (urls.length === 0) return;
+
     if (mode === 'single') {
-      onSubmit(url.trim(), mode);
+      // For single mode, process each URL via chat
+      for (const u of urls) {
+        onSubmit(u, mode);
+      }
       return;
     }
 
-    // Category mode → direct API call with filter params
+    // Category mode → direct API call with filter params (supports multiple URLs)
     setDeploying(true);
     try {
-      const res = await fetch('/api/orchestrate/full', { credentials: 'include', 
+      const res = await fetch('/api/orchestrate/full', { credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: url.trim(),
+          urls,
+          url: urls[0],
           maxPages: preset.maxPages,
           maxListings: preset.maxListings,
           maxReveals,
@@ -536,9 +551,9 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Deploy failed');
-      // Notify parent about the started mission
+      // Notify parent about the started missions
       if (onCategoryDeploy) {
-        onCategoryDeploy(data.missionId || 'started', url.trim(), preset.label);
+        onCategoryDeploy(data.missionId || 'started', urls.join(', '), `${preset.label} x${urls.length}`);
       }
     } catch (err: any) {
       console.error('[Deploy] Category deploy failed:', err.message);
@@ -621,22 +636,29 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-        <input
-          type="url"
+      <div className="flex flex-col gap-2">
+        <textarea
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder={mode === 'single' ? 'https://www.olx.ro/d/oferta/...' : 'https://www.olx.ro/imobiliare/sibiu/'}
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600"
+          placeholder={mode === 'single'
+            ? 'https://www.olx.ro/d/oferta/...\n(un URL per linie pentru multiple)'
+            : 'https://www.olx.ro/imobiliare/sibiu/\nhttps://www.olx.ro/electronice/\n(un URL per linie)'}
+          rows={parseUrls(url).length > 1 ? 3 : 1}
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600 resize-none"
         />
-        <button
-          onClick={handleDeploy}
-          disabled={!url.trim() || deploying}
-          className="w-full sm:w-auto shrink-0 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold text-xs transition-all disabled:opacity-40 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
-        >
-          {deploying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-          Deploy
-        </button>
+        <div className="flex items-center gap-3">
+          {parseUrls(url).length > 1 && (
+            <span className="text-[10px] text-zinc-500 font-bold">{parseUrls(url).length} URL-uri detectate</span>
+          )}
+          <button
+            onClick={handleDeploy}
+            disabled={!url.trim() || deploying}
+            className="ml-auto shrink-0 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-bold text-xs transition-all disabled:opacity-40 shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+          >
+            {deploying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+            Deploy {parseUrls(url).length > 1 ? `(${parseUrls(url).length})` : ''}
+          </button>
+        </div>
       </div>
     </div>
   );
