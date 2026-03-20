@@ -5,10 +5,15 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
-    react(), 
+    react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: [],
+        navigateFallback: null,
+        runtimeCaching: [],
+      },
       devOptions: {
         enabled: true
       },

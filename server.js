@@ -143,7 +143,7 @@ setupEmailHandler(agentmail, gemini);
   // Serve frontend
   const distPath = join(__dirname, 'dist');
   if (existsSync(distPath)) {
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { etag: false, lastModified: false, setHeaders: (res) => { res.set('Cache-Control', 'no-store'); } }));
     app.get('/{*splat}', (req, res) => { res.sendFile(join(distPath, 'index.html')); });
     console.log(`[Server] Serving frontend from ${distPath}`);
   }
