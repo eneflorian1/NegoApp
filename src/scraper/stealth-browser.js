@@ -1,15 +1,17 @@
 /**
  * StealthBrowser - Puppeteer with anti-detection measures
- * 
+ *
  * Creates browser instances that resist fingerprinting:
  * - puppeteer-extra-plugin-stealth (evades common bot detections)
  * - Proxy integration per session
  * - Human-like behavior helpers (random delays, scrolling)
  * - Cookie/session persistence per identity
+ * - VPS-optimized: low memory args, force-kill zombie Chrome processes
  */
 
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { execSync } from 'child_process';
 
 puppeteer.use(StealthPlugin());
 
@@ -19,11 +21,35 @@ function sleep(min, max) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Kill zombie/orphaned Chrome processes on Linux (VPS).
+ * Only kills headless Chrome with ppid=1 (orphaned — parent node process died).
+ * Leaves WhatsApp's Chrome (managed by whatsapp-web.js) and active scrapers alone.
+ */
+function killZombieChrome() {
+  if (process.platform !== 'linux') return;
+  try {
+    // Find Chrome processes whose parent is PID 1 (orphaned/zombie)
+    const output = execSync(
+      'ps -eo pid,ppid,args 2>/dev/null | grep -i "[c]hrom" | awk \'$2 == 1 {print $1}\'',
+      { timeout: 5000, encoding: 'utf-8' }
+    ).trim();
+    if (output) {
+      const pids = output.split('\n').filter(Boolean);
+      for (const pid of pids) {
+        try { execSync(`kill -9 ${pid} 2>/dev/null || true`, { timeout: 2000 }); } catch {}
+      }
+      if (pids.length > 0) console.log(`[StealthBrowser] Killed ${pids.length} orphaned Chrome process(es)`);
+    }
+  } catch { /* ignore */ }
+}
+
 class StealthBrowser {
   constructor() {
     this.browser = null;
     this.page = null;
     this.proxy = null;
+    this._pid = null;
   }
 
   /**
@@ -40,6 +66,16 @@ class StealthBrowser {
       '--disable-blink-features=AutomationControlled',
       '--disable-features=IsolateOrigins,site-per-process',
       '--window-size=1366,768',
+      // VPS memory optimization
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--disable-translate',
+      '--metrics-recording-only',
+      '--no-first-run',
+      '--renderer-process-limit=1',
+      '--js-flags=--max-old-space-size=256',
     ];
 
     // Linux VPS without display server: Chrome needs GPU-disable flags
@@ -58,6 +94,7 @@ class StealthBrowser {
 
     this.browser = await puppeteer.launch({
       headless: 'new',
+      protocolTimeout: 180000,
       args,
       defaultViewport: {
         width: 1366,
@@ -65,6 +102,9 @@ class StealthBrowser {
       },
       ...options,
     });
+
+    // Track the Chrome PID for force-kill fallback
+    this._pid = this.browser.process()?.pid || null;
 
     this.page = await this.browser.newPage();
 
@@ -112,7 +152,7 @@ class StealthBrowser {
   async goto(url, options = {}) {
     await this.page.goto(url, {
       waitUntil: 'domcontentloaded',
-      timeout: 30000,
+      timeout: 60000,
       ...options,
     });
 
@@ -236,15 +276,44 @@ class StealthBrowser {
   }
 
   /**
-   * Close browser
+   * Close browser with force-kill fallback for VPS reliability
    */
   async close() {
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
-      this.page = null;
+    if (!this.browser) return;
+
+    const pid = this._pid;
+
+    // Try graceful close with timeout
+    try {
+      await Promise.race([
+        this.browser.close(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('close timeout')), 15000)),
+      ]);
+    } catch (err) {
+      console.warn(`[StealthBrowser] Graceful close failed (${err.message}), force-killing pid ${pid}`);
+      this._forceKill(pid);
     }
+
+    this.browser = null;
+    this.page = null;
+    this._pid = null;
+  }
+
+  /**
+   * Force-kill the Chrome process by PID
+   */
+  _forceKill(pid) {
+    if (!pid) return;
+    try {
+      if (process.platform === 'linux') {
+        execSync(`kill -9 ${pid} 2>/dev/null || true`, { timeout: 3000 });
+        // Also kill child processes
+        execSync(`pkill -9 -P ${pid} 2>/dev/null || true`, { timeout: 3000 });
+      } else {
+        process.kill(pid, 'SIGKILL');
+      }
+    } catch { /* process already dead */ }
   }
 }
 
-export { StealthBrowser, sleep };
+export { StealthBrowser, sleep, killZombieChrome };

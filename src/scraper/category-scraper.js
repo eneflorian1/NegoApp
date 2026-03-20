@@ -11,7 +11,7 @@
  */
 
 import DomainStrategy from './domain-strategy.js';
-import { StealthBrowser, sleep } from './stealth-browser.js';
+import { StealthBrowser, sleep, killZombieChrome } from './stealth-browser.js';
 
 class CategoryScraper {
   constructor(options = {}) {
@@ -65,6 +65,9 @@ class CategoryScraper {
     console.log(`[CategoryScraper] URL: ${categoryUrl}`);
     console.log(`[CategoryScraper] Max pages: ${maxPages}, Max listings: ${maxListings}`);
     console.log(`[CategoryScraper] Selectors: card=${selectors.listingCard}, link=${selectors.listingLink}, next=${selectors.nextPage}`);
+
+    // Kill any zombie Chrome from previous crashes before launching
+    killZombieChrome();
 
     const browser = new StealthBrowser();
     const allListings = [];

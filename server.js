@@ -33,6 +33,7 @@ import UserModel from './src/db/models/User.js';
 
 // ─── Utils ──────────────────────────────────────────────────────────────────
 import { sanitizeLeadPrices } from './src/utils/price.js';
+import { killZombieChrome } from './src/scraper/stealth-browser.js';
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 import createRevealRoutes from './src/routes/reveal.routes.js';
@@ -68,6 +69,9 @@ setupEmailHandler(agentmail, gemini);
 // ═════════════════════════════════════════════════════════════════════════════
 // ASYNC BOOT
 // ═════════════════════════════════════════════════════════════════════════════
+
+// Kill zombie Chrome from previous crashes before starting
+killZombieChrome();
 
 (async () => {
   await connectDB();
@@ -154,7 +158,7 @@ setupEmailHandler(agentmail, gemini);
   });
 
   const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     const strategies = domainStrategy.listAll();
     console.log(`\n╔══════════════════════════════════════════════╗`);
     console.log(`║  NegoApp API Server v4 — port ${PORT}            ║`);
@@ -166,4 +170,16 @@ setupEmailHandler(agentmail, gemini);
     console.log(`║  Auth: POST /api/auth/register|login         ║`);
     console.log(`╚══════════════════════════════════════════════╝\n`);
   });
+
+  // ─── Graceful shutdown ─────────────────────────────────────────────────
+  async function shutdown(signal) {
+    console.log(`\n[Server] ${signal} received — shutting down...`);
+    server.close();
+    try { await whatsappManager.destroyAll(); } catch {}
+    killZombieChrome();
+    console.log('[Server] Cleanup done. Exiting.');
+    process.exit(0);
+  }
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 })();

@@ -62,6 +62,23 @@ class WhatsAppManager {
     return this.clients.get(userId)?.isConnected || false;
   }
 
+  /** Destroy all client instances (for graceful shutdown) */
+  async destroyAll() {
+    for (const [userId, client] of this.clients) {
+      try {
+        if (client.client) {
+          await Promise.race([
+            client.client.destroy(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+          ]);
+        }
+      } catch (err) {
+        console.warn(`[WhatsAppManager] Destroy failed for ${userId}: ${err.message}`);
+      }
+    }
+    this.clients.clear();
+  }
+
   /** Auto-connect users that have saved sessions */
   async autoConnectAll(userIds) {
     for (const userId of userIds) {
