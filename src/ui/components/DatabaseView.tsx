@@ -39,6 +39,7 @@ export default function DatabaseView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   async function fetchData() {
@@ -81,6 +82,39 @@ export default function DatabaseView() {
       fetchData();
     } catch (e) {
       console.log('[Database] Stop error:', e);
+    }
+  }
+
+  function toggleSelection(id: string) {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  }
+
+  function toggleAll() {
+    if (selectedIds.size === filtered.length && filtered.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(m => m.id)));
+    }
+  }
+
+  async function deleteSelectedMissions() {
+    if (!selectedIds.size) return;
+    if (!confirm(`Sigur vrei să ștergi ${selectedIds.size} ${selectedIds.size === 1 ? 'misiune selectată' : 'misiuni selectate'}?`)) return;
+    
+    try {
+      await fetch('/api/missions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(selectedIds) })
+      });
+      setMissions(prev => prev.filter(m => !selectedIds.has(m.id)));
+      setSelectedIds(new Set());
+      fetchData();
+    } catch (e) {
+      console.log('[Database] Bulk delete error:', e);
     }
   }
 
@@ -134,10 +168,34 @@ export default function DatabaseView() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+      {/* Bulk Actions & Filters */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
+          <div className="flex items-center gap-3">
+            <input 
+              type="checkbox"
+              checked={filtered.length > 0 && selectedIds.size === filtered.length}
+              onChange={toggleAll}
+              className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/30 cursor-pointer"
+              title="Selectează tot"
+            />
+            <span className="text-xs text-zinc-400 font-medium">
+              {selectedIds.size} selectate
+            </span>
+          </div>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={deleteSelectedMissions}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-xs font-bold transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Șterge Selecția
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             value={searchQuery}
@@ -162,6 +220,7 @@ export default function DatabaseView() {
           ))}
         </div>
       </div>
+      </div>
 
       {/* Mission List */}
       <div className="space-y-4">
@@ -170,7 +229,9 @@ export default function DatabaseView() {
             key={mission.id} 
             mission={mission} 
             isExpanded={expandedId === mission.id}
+            isSelected={selectedIds.has(mission.id)}
             onToggle={() => setExpandedId(expandedId === mission.id ? null : mission.id)}
+            onSelect={() => toggleSelection(mission.id)}
             onDelete={() => deleteMission(mission.id)}
             onStop={() => stopMission(mission.id)}
           />
@@ -190,11 +251,13 @@ export default function DatabaseView() {
 // Mission Card Component
 // ────────────────────────────────────────────────────────────────
 
-function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop }: {
+function MissionCard({ mission, isExpanded, isSelected, onToggle, onSelect, onDelete, onStop }: {
   key?: React.Key;
   mission: Mission;
   isExpanded: boolean;
+  isSelected: boolean;
   onToggle: () => void;
+  onSelect: () => void;
   onDelete: () => void;
   onStop: () => void;
 }) {
@@ -230,6 +293,14 @@ function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop }: {
     }`}>
       {/* Header Row */}
       <div className="flex items-center gap-2 sm:gap-4 p-3 lg:p-5">
+        <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <input 
+            type="checkbox" 
+            checked={isSelected}
+            onChange={onSelect}
+            className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-500 focus:ring-indigo-500/30 cursor-pointer"
+          />
+        </div>
         <div className="flex-shrink-0">{statusIcon(mission.status)}</div>
         
         <div className="flex-1 min-w-0" onClick={onToggle} style={{ cursor: 'pointer' }}>

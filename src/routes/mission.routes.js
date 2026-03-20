@@ -36,6 +36,21 @@ export default function createMissionRoutes({ orchestrator, gemini, whatsapp }) 
     res.json({ success: true });
   });
 
+  router.delete('/missions', (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) return res.status(400).json({ error: 'Array of ids required' });
+    
+    let deletedCount = 0;
+    for (const id of ids) {
+      const mission = MissionRepo.get(id);
+      if (mission && mission.userId && mission.userId === req.user.id) {
+        orchestrator.deleteMission(id);
+        if (MissionRepo.delete(id)) deletedCount++;
+      }
+    }
+    res.json({ success: true, deletedCount });
+  });
+
   router.post('/mission/:id/stop', (req, res) => {
     const missionId = req.params.id;
     const mission = orchestrator.getMission(missionId) || MissionRepo.get(missionId);
