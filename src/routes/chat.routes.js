@@ -41,7 +41,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
 
           (async () => {
             try {
-              const result = await orchestrator.executeSingleReveal({ url, useProxy: intent.useProxy || false, personality });
+              const result = await orchestrator.executeSingleReveal({ url, useProxy: intent.useProxy || false, personality, geminiClient: userGemini });
               result.url = url;
               mission.results = [result];
               mission.leadsFound = 1;
@@ -50,7 +50,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
               mission.status = result.success ? 'completed' : 'error';
               mission.updatedAt = new Date().toISOString();
               MissionRepo.save();
-              if (result.success) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+              if (result.success) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
             } catch (err) {
               mission.status = 'error';
               mission.results = [{ success: false, error: err.message, url }];
@@ -86,14 +86,14 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
             try {
               const fullMission = await orchestrator.executeMission({
                 url, query: '', domain, useProxy: intent.useProxy || false,
-                maxPages, maxListings, maxReveals, personality,
+                maxPages, maxListings, maxReveals, personality, geminiClient: userGemini,
                 onPhoneRevealed: async (result) => {
                   mission.leadsContacted = (mission.leadsContacted || 0) + 1;
                   if (!mission.results) mission.results = [];
                   mission.results.push(result);
                   mission.updatedAt = new Date().toISOString();
                   MissionRepo.save();
-                  if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+                  if (result.phone) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
                 }
               });
               mission.results = fullMission.reveals || [];

@@ -123,7 +123,11 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
     const userGemini = gemini.forKey(cfg.geminiApiKey);
     if (!userGemini.isAvailable) return res.status(503).json({ error: 'Gemini API key not configured in Settings' });
     try {
-      const strategy = await siteIntelligence.discover(domain, { categoryUrl: categoryUrl || null, listingUrl: listingUrl || null });
+      // Create user-scoped intelligence client
+      const { default: SiteIntelligence } = await import('../scraper/site-intelligence.js');
+      const userIntelligence = new SiteIntelligence({ geminiClient: userGemini, domainStrategy, proxyManager });
+      
+      const strategy = await userIntelligence.discover(domain, { categoryUrl: categoryUrl || null, listingUrl: listingUrl || null });
       res.json({ success: true, domain, strategy });
     } catch (error) { res.status(500).json({ error: error.message }); }
   });
@@ -158,15 +162,19 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
 
     const waClient = whatsapp.getClient ? whatsapp.getClient(userId) : whatsapp;
 
+    const cfg = ConfigRepo.load(userId);
+    const userGemini = gemini.forKey(cfg.geminiApiKey);
+
     orchestrator.executeMission({
       url, query, domain: forceDomain, useProxy, maxPages, maxListings, maxReveals, personality,
+      geminiClient: userGemini,
       onPhoneRevealed: async (result) => {
         mission.leadsContacted = (mission.leadsContacted || 0) + 1;
         if (!mission.results) mission.results = [];
         mission.results.push(result);
         mission.updatedAt = new Date().toISOString();
         MissionRepo.save();
-        if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+        if (result.phone) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
       }
     }).then(async (fullMission) => {
       mission.results = fullMission.reveals || [];
@@ -201,7 +209,11 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
 
     if (!strategy) {
       if (userGemini.isAvailable) {
-        try { await siteIntelligence.discover(domain, { listingUrl: mode === 'single' ? url : undefined, categoryUrl: mode === 'category' ? url : undefined }); }
+        try { 
+          const { default: SiteIntelligence } = await import('../scraper/site-intelligence.js');
+          const userIntelligence = new SiteIntelligence({ geminiClient: userGemini, domainStrategy, proxyManager });
+          await userIntelligence.discover(domain, { listingUrl: mode === 'single' ? url : undefined, categoryUrl: mode === 'category' ? url : undefined }); 
+        }
         catch (err) { return res.status(400).json({ error: `No strategy for ${domain} and AI discovery failed: ${err.message}` }); }
       } else {
         return res.status(400).json({ error: `No strategy available for ${domain}. Configure Gemini API key in Settings.` });
@@ -217,7 +229,7 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
     if (mode === 'single') {
       (async () => {
         try {
-          const result = await orchestrator.executeSingleReveal({ url, useProxy, personality });
+          const result = await orchestrator.executeSingleReveal({ url, useProxy, personality, geminiClient: userGemini });
           result.url = url;
           mission.results = [result];
           mission.leadsFound = 1;
@@ -226,7 +238,7 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
           mission.status = result.success ? 'completed' : 'error';
           mission.updatedAt = new Date().toISOString();
           MissionRepo.save();
-          if (result.success) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+          if (result.success) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
         } catch (err) {
           mission.status = 'error';
           mission.results = [{ success: false, error: err.message, url }];
@@ -241,7 +253,7 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
       (async () => {
         try {
           const fullMission = await orchestrator.executeMission({
-            url, query: query || '', domain, useProxy, maxPages: 2, maxListings: 50, maxReveals: 5, personality,
+            url, query: query || '', domain, useProxy, maxPages: 2, maxListings: 50, maxReveals: 5, personality, geminiClient: userGemini,
           });
           mission.results = fullMission.reveals || [];
           mission.leadsFound = fullMission.listings?.length || 0;
@@ -252,7 +264,7 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
           mission.updatedAt = new Date().toISOString();
           MissionRepo.save();
           for (const result of (fullMission.reveals || [])) {
-            if (result.success && result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+            if (result.success && result.phone) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
           }
         } catch (err) {
           mission.status = 'error';
