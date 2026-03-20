@@ -12,6 +12,7 @@ interface InboxViewProps {
   selectedLeadId: string | null;
   setSelectedLeadId: (id: string | null) => void;
   onToggleBot: (leadId: string) => void;
+  onDeleteLead: (leadId: string) => void;
 }
 
 interface LeadMeta {
@@ -20,7 +21,7 @@ interface LeadMeta {
   lastSender: string;
 }
 
-export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, onToggleBot }: InboxViewProps) {
+export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, onToggleBot, onDeleteLead }: InboxViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [leadMeta, setLeadMeta] = useState<Record<string, LeadMeta>>({});
@@ -122,7 +123,9 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
       setDeleteConfirmId(null);
       if (selectedLeadId === leadId) {
         setMessages([]);
+        setSelectedLeadId(null);
       }
+      onDeleteLead(leadId);
     } catch { /* ignore */ }
   };
 

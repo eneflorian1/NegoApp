@@ -246,6 +246,7 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
               selectedLeadId={selectedLeadId}
               setSelectedLeadId={setSelectedLeadId}
               onToggleBot={toggleBotActive}
+              onDeleteLead={deleteLead}
             />
           </div>
           <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
