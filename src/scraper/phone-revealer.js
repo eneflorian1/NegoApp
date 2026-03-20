@@ -61,8 +61,7 @@ class PhoneRevealer {
     };
 
     try {
-      console.log(`[Reveal] URL: ${url}`);
-      console.log(`[Reveal] Proxy: ${proxy ? proxy.url : 'direct'}`);
+      console.log(`[Reveal] ${url}${proxy ? ` (proxy: ${proxy.url})` : ''}`);
 
       // Launch browser
       await browser.launch(proxy, {

@@ -100,7 +100,6 @@ class AgentOrchestrator {
 
     try {
       // ─── PHASE 1: Ensure domain strategy exists ────────────────────────
-      this._step(mission, 'strategy', `Loading strategy for ${domain}...`);
       let strategy = this.domainStrategy.load(domain);
 
       if (!strategy) {
@@ -110,17 +109,14 @@ class AgentOrchestrator {
         this._emit('mission:updated', mission);
 
         strategy = await activeSiteIntelligence.discover(domain, { categoryUrl: url });
-        this._step(mission, 'strategy', `Strategy discovered and cached for ${domain} (v${strategy.version})`);
-      } else {
-        this._step(mission, 'strategy', `Using cached strategy for ${domain} (v${strategy.version}, success: ${Math.round(strategy.successRate * 100)}%)`);
+        this._step(mission, 'strategy', `Strategy discovered for ${domain}`);
       }
 
       mission.phases.strategy = { status: 'done', version: strategy.version };
-      this._emit('mission:updated', mission);
 
       // ─── PHASE 2: Category scraping ────────────────────────────────────
       if (this._isAborted(missionId)) return;
-      this._step(mission, 'scraping', `Scraping category: ${url}`);
+      this._step(mission, 'scraping', `Scraping: ${url}`);
       mission.status = 'scraping';
       this._emit('mission:updated', mission);
 
@@ -130,15 +126,13 @@ class AgentOrchestrator {
       const scrapeResult = await scraper.scrape(url, {
         maxPages,
         maxListings,
-        useProxy,
         headless: true,
       });
 
-      // categoryScraper.scrape() returns { listings, pagesScraped, domain, ... }
       const listings = scrapeResult.listings || scrapeResult;
       mission.listings = listings;
       mission.phases.scraping = { status: 'done', count: listings.length, pagesScraped: scrapeResult.pagesScraped || 0 };
-      this._step(mission, 'scraping', `Found ${listings.length} listings across ${scrapeResult.pagesScraped || 0} pages`);
+      this._step(mission, 'scraping', `Found ${listings.length} listings`);
       this._emit('mission:updated', mission);
 
       if (listings.length === 0) {
@@ -152,14 +146,14 @@ class AgentOrchestrator {
       // ─── PHASE 3: Batch phone reveal ───────────────────────────────────
       if (this._isAborted(missionId)) return;
 
-      // Only reveal up to maxReveals listings (not all)
+      // Reveal all scraped listings (maxListings already limits the count)
       const toReveal = listings.slice(0, maxReveals);
-      this._step(mission, 'revealing', `Starting batch reveal for ${toReveal.length} listings...`);
+      this._step(mission, 'revealing', `Revealing ${toReveal.length} phone numbers...`);
       mission.status = 'revealing';
       this._emit('mission:updated', mission);
 
       const batchProcessor = new BatchProcessor(
-        this.proxyManager,
+        useProxy ? this.proxyManager : null,
         this.domainStrategy,
         {
           useProxy,

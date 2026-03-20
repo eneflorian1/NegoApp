@@ -61,10 +61,7 @@ class CategoryScraper {
       throw new Error(`Strategy for ${domain} has no categorySelectors. Cannot scrape.`);
     }
 
-    console.log(`[CategoryScraper] Starting scrape of ${domain}`);
-    console.log(`[CategoryScraper] URL: ${categoryUrl}`);
-    console.log(`[CategoryScraper] Max pages: ${maxPages}, Max listings: ${maxListings}`);
-    console.log(`[CategoryScraper] Selectors: card=${selectors.listingCard}, link=${selectors.listingLink}, next=${selectors.nextPage}`);
+    console.log(`[CategoryScraper] ${domain}: ${maxListings} listings from max ${maxPages} pages`);
 
     // Kill any zombie Chrome from previous crashes before launching
     killZombieChrome();

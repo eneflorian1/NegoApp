@@ -492,10 +492,11 @@ function renderContent(content: string) {
 // ────────────────────────────────────────────────────────────────
 
 const CATEGORY_PRESETS = [
-  { label: '10', maxListings: 10, maxPages: 1, maxReveals: 5 },
-  { label: '20', maxListings: 20, maxPages: 1, maxReveals: 5 },
-  { label: 'Prima pagină', maxListings: 50, maxPages: 1, maxReveals: 5 },
-  { label: 'Toate', maxListings: 500, maxPages: 20, maxReveals: 10 },
+  { label: '5', maxListings: 5, maxPages: 1 },
+  { label: '10', maxListings: 10, maxPages: 1 },
+  { label: '20', maxListings: 20, maxPages: 1 },
+  { label: 'Toată pagina', maxListings: 50, maxPages: 1 },
+  { label: 'Toate', maxListings: 500, maxPages: 20 },
 ];
 
 interface QuickDeployProps {
@@ -506,8 +507,8 @@ interface QuickDeployProps {
 function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState<'single' | 'category'>('single');
-  const [selectedPreset, setSelectedPreset] = useState(1); // default: 20
-  const [maxReveals, setMaxReveals] = useState(5);
+  const [selectedPreset, setSelectedPreset] = useState(2); // default: 20
+  const [useProxy, setUseProxy] = useState(false);
   const [deploying, setDeploying] = useState(false);
 
   const preset = CATEGORY_PRESETS[selectedPreset];
@@ -527,9 +528,9 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
     if (urls.length === 0) return;
 
     if (mode === 'single') {
-      // For single mode, process each URL via chat
+      // For single mode, process each URL via chat (append "proxy" keyword if enabled)
       for (const u of urls) {
-        onSubmit(u, mode);
+        onSubmit(useProxy ? `${u} proxy` : u, mode);
       }
       return;
     }
@@ -545,8 +546,8 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
           url: urls[0],
           maxPages: preset.maxPages,
           maxListings: preset.maxListings,
-          maxReveals,
-          useProxy: false,
+          maxReveals: preset.maxListings,
+          useProxy,
         }),
       });
       const data = await res.json();
@@ -613,24 +614,9 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
               ))}
             </div>
 
-            {/* Max reveals slider */}
-            <div className="flex items-center gap-3 pt-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 whitespace-nowrap">Reveal max</span>
-              <input
-                type="range"
-                min={1}
-                max={Math.min(preset.maxListings, 20)}
-                value={maxReveals}
-                onChange={(e) => setMaxReveals(Number(e.target.value))}
-                className="flex-1 h-1 accent-purple-500"
-              />
-              <span className="text-xs font-black text-purple-300 tabular-nums w-6 text-right">{maxReveals}</span>
-            </div>
-
             {/* Summary */}
             <div className="text-[10px] text-zinc-500 bg-zinc-900/50 rounded-lg px-3 py-2 border border-zinc-800/50">
-              📊 Se vor scana <span className="text-zinc-300 font-bold">{preset.maxListings}</span> anunțuri din <span className="text-zinc-300 font-bold">{preset.maxPages}</span> {preset.maxPages === 1 ? 'pagină' : 'pagini'}, 
-              reveal la <span className="text-purple-300 font-bold">{maxReveals}</span> telefoane
+              Se vor extrage <span className="text-purple-300 font-bold">{preset.maxListings}</span> anunțuri cu telefon din <span className="text-zinc-300 font-bold">{preset.maxPages}</span> {preset.maxPages === 1 ? 'pagină' : 'pagini'}
             </div>
           </motion.div>
         )}
@@ -647,6 +633,19 @@ function QuickDeployPanel({ onSubmit, onCategoryDeploy }: QuickDeployProps) {
           className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-zinc-600 resize-none"
         />
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setUseProxy(!useProxy)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
+              useProxy
+                ? 'bg-amber-600/10 border-amber-500/30 text-amber-300'
+                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+            }`}
+          >
+            <div className={`w-3 h-3 rounded border flex items-center justify-center transition-colors ${useProxy ? 'bg-amber-500 border-amber-500' : 'border-zinc-600'}`}>
+              {useProxy && <span className="text-[8px] text-black font-black">✓</span>}
+            </div>
+            IPv6 Proxy
+          </button>
           {parseUrls(url).length > 1 && (
             <span className="text-[10px] text-zinc-500 font-bold">{parseUrls(url).length} URL-uri detectate</span>
           )}

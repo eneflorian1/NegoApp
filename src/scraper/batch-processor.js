@@ -110,19 +110,8 @@ class BatchProcessor extends EventEmitter {
       resumed: progress.completed.length > 0,
     });
 
-    console.log(`\n[Batch] ═══════════════════════════════════════════════`);
-    console.log(`[Batch] ID: ${this.batchId}`);
-    console.log(`[Batch] Domain: ${domain}`);
-    console.log(`[Batch] Total: ${toProcess.length} | Remaining: ${remaining.length}`);
-    console.log(`[Batch] Proxy: ${this.options.useProxy ? `${this.proxyManager.availableCount} available` : 'disabled'}`);
-    console.log(`[Batch] Delay: ${this.options.delayMinMs / 1000}s - ${this.options.delayMaxMs / 1000}s`);
-    if (strategy) {
-      console.log(`[Batch] Strategy: v${strategy.version} (${(strategy.successRate * 100).toFixed(0)}% success)`);
-      if (strategy.rateLimit) {
-        console.log(`[Batch] Rate limit: max ${strategy.rateLimit.maxRevealsPerSession} per session, ${strategy.rateLimit.delayBetweenMs / 1000}s min delay`);
-      }
-    }
-    console.log(`[Batch] ═══════════════════════════════════════════════\n`);
+    console.log(`[Batch] Starting: ${toProcess.length} listings, delay ${this.options.delayMinMs / 1000}s-${this.options.delayMaxMs / 1000}s${this.options.useProxy ? `, ${this.proxyManager.availableCount} proxies` : ', direct'}`);
+
 
     // Respect strategy rate limits if stricter than our defaults
     let effectiveDelayMin = this.options.delayMinMs;
@@ -155,7 +144,7 @@ class BatchProcessor extends EventEmitter {
       const listingIndex = result.completed.length + result.failed.length + 1;
       const totalToProcess = toProcess.length;
 
-      console.log(`[Batch] [${listingIndex}/${totalToProcess}] Processing: ${listing.url}`);
+      console.log(`[Batch] [${listingIndex}/${totalToProcess}] ${listing.title || listing.url}`);
       this.emit('batch:item_start', {
         batchId: this.batchId,
         index: listingIndex,
@@ -267,7 +256,7 @@ class BatchProcessor extends EventEmitter {
       // Delay before next reveal (unless last item)
       if (i < remaining.length - 1 && !this.shouldAbort) {
         const delay = this._randomDelay(effectiveDelayMin, effectiveDelayMax);
-        console.log(`[Batch] Waiting ${(delay / 1000).toFixed(0)}s before next reveal...`);
+        console.log(`[Batch] Next in ${(delay / 1000).toFixed(0)}s`);
         this.emit('batch:waiting', { batchId: this.batchId, delayMs: delay });
 
         const waited = await this._interruptibleSleep(delay);
@@ -290,12 +279,8 @@ class BatchProcessor extends EventEmitter {
       ? Math.round((result.completed.length / (result.completed.length + result.failed.length)) * 100)
       : 0;
 
-    console.log(`\n[Batch] ═══════════════════════════════════════════════`);
-    console.log(`[Batch] DONE ${result.aborted ? '(ABORTED)' : ''}`);
-    console.log(`[Batch] Completed: ${result.completed.length} | Failed: ${result.failed.length} | Skipped: ${result.skipped.length}`);
-    console.log(`[Batch] Success rate: ${successRate}%`);
-    console.log(`[Batch] Phones found: ${result.completed.map(r => r.phone).join(', ') || 'none'}`);
-    console.log(`[Batch] ═══════════════════════════════════════════════\n`);
+    console.log(`[Batch] Done: ${result.completed.length} OK, ${result.failed.length} failed (${successRate}%)${result.aborted ? ' — ABORTED' : ''}`);
+    if (result.completed.length > 0) console.log(`[Batch] Phones: ${result.completed.map(r => r.phone).join(', ')}`);
 
     this.emit('batch:done', {
       batchId: this.batchId,

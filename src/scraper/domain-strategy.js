@@ -32,7 +32,6 @@ class DomainStrategy {
 
     try {
       const data = JSON.parse(readFileSync(filePath, 'utf-8'));
-      console.log(`[Strategy] Loaded cached strategy for ${domain} (v${data.version}, success: ${(data.successRate * 100).toFixed(0)}%)`);
       return data;
     } catch (err) {
       console.error(`[Strategy] Failed to load strategy for ${domain}:`, err.message);

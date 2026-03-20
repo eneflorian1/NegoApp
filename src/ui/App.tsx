@@ -74,7 +74,7 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
     setActiveTabState(tab);
   };
 
-  const { leads, config, setConfig, configLoaded, serviceStatus, toggleBotActive, deleteLead } = useAppData();
+  const { leads, config, setConfig, configLoaded, serviceStatus, toggleBotActive, deleteLead, deleteLeads } = useAppData();
 
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<OrchestratorTask[]>([]);
@@ -271,7 +271,7 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
             <DatabaseView />
           </div>
           <div style={{ display: activeTab === 'offers' ? 'block' : 'none' }}>
-            <OffersView leads={leads} />
+            <OffersView leads={leads} deleteLeads={deleteLeads} />
           </div>
           <div style={{ display: activeTab === 'leads' ? 'block' : 'none' }}>
             <LeadsView leads={leads} marketStats={marketStats} selectedLeadId={selectedLeadId} setSelectedLeadId={setSelectedLeadId} onDeleteLead={deleteLead} />

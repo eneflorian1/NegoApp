@@ -15,6 +15,7 @@ import {
   Filter,
   ArrowDownUp,
   ShoppingBag,
+  Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lead } from '../types';
@@ -60,11 +61,36 @@ const statusPriority: Record<string, number> = {
   closed: 4,
 };
 
-export default function OffersView({ leads }: { leads: Lead[] }) {
+export default function OffersView({ leads, deleteLeads }: { leads: Lead[], deleteLeads: (ids: string[]) => void }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [sort, setSort] = useState<SortKey>('date');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleSelection(id: string) {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  }
+
+  function toggleAll() {
+    // Note: offers is the filtered array
+    if (selectedIds.size === Math.min(counts.all, offers.length) && offers.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(offers.map(l => l.id)));
+    }
+  }
+
+  async function deleteSelectedOffers() {
+    if (!selectedIds.size) return;
+    if (!confirm(`Sigur vrei să ștergi ${selectedIds.size} ${selectedIds.size === 1 ? 'ofertă selectată' : 'oferte selectate'}?`)) return;
+    
+    await deleteLeads(Array.from(selectedIds));
+    setSelectedIds(new Set());
+  }
 
   const offers = useMemo(() => {
     let filtered = leads.filter(l => OFFER_STATUSES.has(l.status));
@@ -195,6 +221,32 @@ export default function OffersView({ leads }: { leads: Lead[] }) {
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {offers.length > 0 && (
+        <div className="flex items-center justify-between bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
+          <div className="flex items-center gap-3">
+            <input 
+              type="checkbox"
+              checked={offers.length > 0 && selectedIds.size === offers.length}
+              onChange={toggleAll}
+              className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500/30 cursor-pointer"
+              title="Selectează tot"
+            />
+            <span className="text-xs text-zinc-400 font-medium">
+              {selectedIds.size} selectate
+            </span>
+          </div>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={deleteSelectedOffers}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-xs font-bold transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Șterge Selecția
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Offers list */}
       {offers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
@@ -210,7 +262,9 @@ export default function OffersView({ leads }: { leads: Lead[] }) {
                 lead={lead}
                 index={idx}
                 expanded={expandedId === lead.id}
+                isSelected={selectedIds.has(lead.id)}
                 onToggle={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
+                onSelect={() => toggleSelection(lead.id)}
               />
             ))}
           </AnimatePresence>
@@ -222,12 +276,14 @@ export default function OffersView({ leads }: { leads: Lead[] }) {
 
 /* ─── Offer Card ──────────────────────────────────────────────────────────────── */
 
-function OfferCard({ lead, index, expanded, onToggle }: {
+function OfferCard({ lead, index, expanded, isSelected, onToggle, onSelect }: {
   key?: React.Key;
   lead: Lead;
   index: number;
   expanded: boolean;
+  isSelected: boolean;
   onToggle: () => void;
+  onSelect: () => void;
 }) {
   const reduction = calcReduction(lead);
   const lost = isLostContact(lead);
@@ -249,80 +305,93 @@ function OfferCard({ lead, index, expanded, onToggle }: {
       }`}
     >
       {/* Main row */}
-      <button
-        onClick={onToggle}
-        className="w-full px-4 lg:px-6 py-4 flex items-center gap-4 text-left hover:bg-zinc-800/20 transition-colors"
-      >
-        {/* Avatar */}
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-          lead.status === 'accepted' || lead.status === 'autosend'
-            ? 'bg-emerald-500/15 text-emerald-400'
-            : lead.status === 'negotiating'
-            ? 'bg-indigo-500/15 text-indigo-400'
-            : 'bg-zinc-800 text-zinc-400'
-        }`}>
-          {lead.sellerName?.[0]?.toUpperCase() || '?'}
+      <div className="w-full px-4 lg:px-6 py-4 flex items-center gap-3 sm:gap-4 hover:bg-zinc-800/20 transition-colors">
+        {/* Checkbox */}
+        <div className="shrink-0 flex items-center">
+          <input 
+            type="checkbox" 
+            checked={isSelected}
+            onChange={onSelect}
+            className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500/30 cursor-pointer"
+          />
         </div>
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-semibold text-sm text-zinc-100 truncate">{lead.sellerName}</span>
-            {lost && (
-              <span className="flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                <AlertTriangle className="w-2.5 h-2.5" /> PIERDUT
+        {/* Content wrapper replacing button */}
+        <div
+          onClick={onToggle}
+          className="flex-1 min-w-0 flex items-center gap-4 cursor-pointer text-left"
+        >
+          {/* Avatar */}
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
+            lead.status === 'accepted' || lead.status === 'autosend'
+              ? 'bg-emerald-500/15 text-emerald-400'
+              : lead.status === 'negotiating'
+              ? 'bg-indigo-500/15 text-indigo-400'
+              : 'bg-zinc-800 text-zinc-400'
+          }`}>
+            {lead.sellerName?.[0]?.toUpperCase() || '?'}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="font-semibold text-sm text-zinc-100 truncate">{lead.sellerName}</span>
+              {lost && (
+                <span className="flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                  <AlertTriangle className="w-2.5 h-2.5" /> PIERDUT
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-zinc-500 truncate max-w-[300px]">{lead.title}</p>
+          </div>
+
+          {/* Prices */}
+          <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0">
+            {lead.initialPrice && (
+              <span className={`text-[11px] ${reduction ? 'line-through text-zinc-600' : 'text-zinc-400 font-medium'}`}>
+                {lead.initialPrice}
+              </span>
+            )}
+            {(lead.finalPrice || (lead.price && lead.price !== lead.initialPrice)) && (
+              <span className="text-sm font-bold text-emerald-400">
+                {lead.finalPrice || lead.price}
+              </span>
+            )}
+            {reduction && (
+              <span className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-500">
+                <TrendingDown className="w-3 h-3" />
+                -{reduction.percent}% ({reduction.absolute.toLocaleString()} {reduction.currency})
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-500 truncate max-w-[300px]">{lead.title}</p>
-        </div>
 
-        {/* Prices */}
-        <div className="hidden sm:flex flex-col items-end gap-0.5 shrink-0">
-          {lead.initialPrice && (
-            <span className={`text-[11px] ${reduction ? 'line-through text-zinc-600' : 'text-zinc-400 font-medium'}`}>
-              {lead.initialPrice}
+          {/* Status + Channel */}
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <span className={`text-[9px] uppercase font-black px-2 py-1 rounded-md flex items-center gap-1 w-fit ${getStatusStyle(lead.status)}`}>
+              {lead.status === 'autosend' && <Send className="w-2.5 h-2.5" />}
+              {lead.status === 'autosend' ? 'ADRESĂ TRIMISĂ' : lead.status}
             </span>
-          )}
-          {(lead.finalPrice || (lead.price && lead.price !== lead.initialPrice)) && (
-            <span className="text-sm font-bold text-emerald-400">
-              {lead.finalPrice || lead.price}
-            </span>
-          )}
-          {reduction && (
-            <span className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-500">
-              <TrendingDown className="w-3 h-3" />
-              -{reduction.percent}% ({reduction.absolute.toLocaleString()} {reduction.currency})
-            </span>
-          )}
-        </div>
+            <div className="flex items-center gap-1.5">
+              {lead.channel === 'whatsapp' && (
+                <span className="text-[10px] text-emerald-600">WA</span>
+              )}
+              {lead.channel === 'email' && (
+                <span className="text-[10px] text-blue-500">Email</span>
+              )}
+              {lead.isBotActive ? (
+                <Bot className="w-3 h-3 text-indigo-400" />
+              ) : (
+                <BotOff className="w-3 h-3 text-zinc-600" />
+              )}
+            </div>
+          </div>
 
-        {/* Status + Channel */}
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <span className={`text-[9px] uppercase font-black px-2 py-1 rounded-md flex items-center gap-1 w-fit ${getStatusStyle(lead.status)}`}>
-            {lead.status === 'autosend' && <Send className="w-2.5 h-2.5" />}
-            {lead.status === 'autosend' ? 'ADRESĂ TRIMISĂ' : lead.status}
-          </span>
-          <div className="flex items-center gap-1.5">
-            {lead.channel === 'whatsapp' && (
-              <span className="text-[10px] text-emerald-600">WA</span>
-            )}
-            {lead.channel === 'email' && (
-              <span className="text-[10px] text-blue-500">Email</span>
-            )}
-            {lead.isBotActive ? (
-              <Bot className="w-3 h-3 text-indigo-400" />
-            ) : (
-              <BotOff className="w-3 h-3 text-zinc-600" />
-            )}
+          {/* Expand chevron */}
+          <div className="shrink-0 text-zinc-600 ml-2">
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
         </div>
-
-        {/* Expand chevron */}
-        <div className="shrink-0 text-zinc-600">
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </div>
-      </button>
+      </div>
 
       {/* Mobile prices (shown below main row on small screens) */}
       <div className="sm:hidden px-4 pb-2 flex items-center gap-3">

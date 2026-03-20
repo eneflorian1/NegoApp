@@ -91,10 +91,19 @@ export function useAppData() {
     } catch { /* ignore */ }
   };
 
+  const deleteLeads = async (leadIds: string[]) => {
+    setLeads(prev => prev.filter(l => !leadIds.includes(l.id)));
+    try {
+      await Promise.all(leadIds.map(id => 
+        fetch(`/api/leads/${id}`, { method: 'DELETE', credentials: 'include' })
+      ));
+    } catch { /* ignore */ }
+  };
+
   return {
     leads, setLeads,
     config, setConfig, configLoaded,
     serviceStatus,
-    toggleBotActive, deleteLead,
+    toggleBotActive, deleteLead, deleteLeads,
   };
 }
