@@ -13,11 +13,8 @@ import { analyzeConversation, updatePriceFromAnalysis, generateReply } from '../
  * @param {GeminiClient} gemini
  */
 export function setupEmailHandler(agentmail, gemini) {
-  // Use a dynamic key provider that defaults to the main/default user's config in the DB
-  const userGemini = gemini.forKey(() => ConfigRepo.get('default', 'geminiApiKey'));
-
   agentmail.on('message', async (msg) => {
-    await handleIncomingEmail(msg, agentmail, userGemini);
+    await handleIncomingEmail(msg, agentmail, gemini);
   });
 }
 

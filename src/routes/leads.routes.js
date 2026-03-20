@@ -114,8 +114,7 @@ export default function createLeadsRoutes({ whatsapp, gemini }) {
 
       res.json({ success: true, message: outMsg, lead });
     } catch (err) {
-      console.error(`[StartConversation] Failed for lead ${lead.id}:`, err.message);
-      res.status(500).json({ error: 'Start conversation failed: ' + err.message });
+      res.status(500).json({ error: err.message });
     }
   });
 
