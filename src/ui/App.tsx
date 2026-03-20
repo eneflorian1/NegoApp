@@ -240,7 +240,7 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
           <div className="w-full flex-1 flex flex-col p-4 lg:p-8 pb-24 lg:pb-12" style={{ display: activeTab === 'orchestrator' ? 'flex' : 'none' }}>
             <OrchestratorView config={config} tasks={tasks} setTasks={setTasks} />
           </div>
-          <div className="w-full flex-1 flex flex-col p-4 lg:p-8 pb-24 lg:pb-12" style={{ display: activeTab === 'inbox' ? 'flex' : 'none' }}>
+          <div className="w-full flex-1 flex flex-col min-h-0 overflow-hidden p-4 lg:p-8" style={{ display: activeTab === 'inbox' ? 'flex' : 'none' }}>
             <InboxView
               leads={leads}
               selectedLeadId={selectedLeadId}

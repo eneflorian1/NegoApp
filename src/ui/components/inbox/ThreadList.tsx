@@ -40,7 +40,7 @@ export default function ThreadList({
   onStartConversation, onSendAddress, onChartOpen,
 }: ThreadListProps) {
   return (
-    <div className={`w-full lg:w-80 border-r border-zinc-800 flex flex-col bg-[#0D0D0E]/30 ${isMobileChatOpen ? 'hidden lg:flex' : 'flex'}`}>
+    <div className={`w-full lg:w-80 border-r border-zinc-800 flex flex-col min-h-0 bg-[#0D0D0E]/30 ${isMobileChatOpen ? 'hidden lg:flex' : 'flex'}`}>
       <div className="p-4 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -87,7 +87,7 @@ export default function ThreadList({
           </div>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar">
         {leads.length === 0 && channelFilter !== 'all' && (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
             <MessageSquare className="w-8 h-8 text-zinc-700 mb-3" />

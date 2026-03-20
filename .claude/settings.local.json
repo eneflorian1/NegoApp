@@ -34,7 +34,11 @@
       "Bash(git -C /c/Users/Admin/Documents/GitHub/NegoApp diff src/scraper/olx-virtual-browser.js)",
       "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp -name *.json -path */data/*)",
       "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp -maxdepth 2 -name *.js -o -name *.sh)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp -type f \\\\\\(-name *inbox* -o -name *conversation* -o -name *chat* \\\\\\))",
+      "Bash(xargs wc:*)",
+      "Bash(xargs grep:*)",
+      "Bash(wc:*)"
     ]
   }
 }
