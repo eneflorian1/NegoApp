@@ -116,7 +116,7 @@ class SiteIntelligence {
         // Step 3: Validate — check that key selectors actually exist on the page
         if (listingHtml) {
           const validationResult = await this._validateListingSelectors(
-            options.sampleListingUrl,
+            sampleListingUrl,
             strategy.listingSelectors
           );
 
@@ -133,7 +133,7 @@ class SiteIntelligence {
 
         if (categoryHtml) {
           const catValidation = await this._validateCategorySelectors(
-            options.sampleCategoryUrl,
+            sampleCategoryUrl,
             strategy.categorySelectors
           );
 
