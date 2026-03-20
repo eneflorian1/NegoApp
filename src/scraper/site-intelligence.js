@@ -184,82 +184,103 @@ class SiteIntelligence {
    * Fetch a page with stealth browser and return cleaned HTML
    */
   async _fetchAndCleanPage(url) {
-    const browser = new StealthBrowser();
     const proxy = this.proxyManager ? this.proxyManager.getRandom() : null;
 
-    try {
-      console.log(`[Intelligence] Fetching: ${url}`);
-      await browser.launch(proxy, { headless: 'new' });
-      await browser.goto(url);
+    // Try with proxy first, fallback to direct if proxy fails
+    const attempts = proxy ? [proxy, null] : [null];
 
-      // Wait for dynamic content
-      await sleep(2000, 3000);
+    for (const currentProxy of attempts) {
+      const browser = new StealthBrowser();
+      try {
+        console.log(`[Intelligence] Fetching: ${url}${currentProxy ? ' (via proxy)' : ' (direct)'}`);
+        await browser.launch(currentProxy, { headless: 'new' });
+        await browser.goto(url);
 
-      // Extract and clean HTML
-      const html = await browser.page.evaluate(() => {
-        // Clone the body to avoid modifying the live DOM
-        const clone = document.body.cloneNode(true);
+        // Wait for dynamic content
+        await sleep(2000, 3000);
 
-        // Remove noise: scripts, styles, SVGs, iframes, ads
-        const removeSelectors = [
-          'script', 'style', 'svg', 'iframe', 'noscript',
-          '[class*="ad-"]', '[class*="advertisement"]', '[id*="google_ads"]',
-          '[class*="cookie"]', '[class*="consent"]', '[class*="popup"]',
-          '[class*="modal"]', '[class*="overlay"]',
-          'img', 'video', 'audio', 'canvas', 'picture',
-          'header > nav', 'footer',
-        ];
+        // Extract and clean HTML
+        const html = await browser.page.evaluate(() => {
+          // Clone the body to avoid modifying the live DOM
+          const clone = document.body.cloneNode(true);
 
-        for (const sel of removeSelectors) {
-          try {
-            clone.querySelectorAll(sel).forEach(el => el.remove());
-          } catch { /* invalid selector */ }
+          // Remove noise: scripts, styles, SVGs, iframes, ads
+          const removeSelectors = [
+            'script', 'style', 'svg', 'iframe', 'noscript',
+            '[class*="ad-"]', '[class*="advertisement"]', '[id*="google_ads"]',
+            '[class*="cookie"]', '[class*="consent"]', '[class*="popup"]',
+            '[class*="modal"]', '[class*="overlay"]',
+            'img', 'video', 'audio', 'canvas', 'picture',
+            'header > nav', 'footer',
+          ];
+
+          for (const sel of removeSelectors) {
+            try {
+              clone.querySelectorAll(sel).forEach(el => el.remove());
+            } catch { /* invalid selector */ }
+          }
+
+          // Remove inline styles (reduce noise)
+          clone.querySelectorAll('[style]').forEach(el => {
+            el.removeAttribute('style');
+          });
+
+          // Remove class attributes that are just CSS hashes (e.g. "css-1a2b3c")
+          // Keep data-testid, data-cy, and meaningful class names
+          clone.querySelectorAll('[class]').forEach(el => {
+            const classes = el.className.split(/\s+/).filter(c =>
+              c.length > 3 && !c.match(/^css-/) && !c.match(/^_/) && !c.match(/^[a-z]{1,2}\d{4,}/)
+            );
+            if (classes.length > 0) {
+              el.className = classes.join(' ');
+            } else {
+              el.removeAttribute('class');
+            }
+          });
+
+          // Remove empty text nodes and comments
+          const walker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);
+          const comments = [];
+          while (walker.nextNode()) comments.push(walker.currentNode);
+          comments.forEach(c => c.remove());
+
+          return clone.innerHTML;
+        });
+
+        const cleaned = html
+          .replace(/\s+/g, ' ')           // Collapse whitespace
+          .replace(/>\s+</g, '><')         // Remove space between tags
+          .trim();
+
+        console.log(`[Intelligence] Fetched ${url} — cleaned HTML: ${cleaned.length} chars`);
+
+        // Truncate if too long for AI
+        if (cleaned.length > MAX_HTML_LENGTH) {
+          console.log(`[Intelligence] Truncating to ${MAX_HTML_LENGTH} chars`);
+          return cleaned.substring(0, MAX_HTML_LENGTH);
         }
 
-        // Remove inline styles (reduce noise)
-        clone.querySelectorAll('[style]').forEach(el => {
-          el.removeAttribute('style');
-        });
+        return cleaned;
 
-        // Remove class attributes that are just CSS hashes (e.g. "css-1a2b3c")
-        // Keep data-testid, data-cy, and meaningful class names
-        clone.querySelectorAll('[class]').forEach(el => {
-          const classes = el.className.split(/\s+/).filter(c =>
-            c.length > 3 && !c.match(/^css-/) && !c.match(/^_/) && !c.match(/^[a-z]{1,2}\d{4,}/)
-          );
-          if (classes.length > 0) {
-            el.className = classes.join(' ');
-          } else {
-            el.removeAttribute('class');
-          }
-        });
-
-        // Remove empty text nodes and comments
-        const walker = document.createTreeWalker(clone, NodeFilter.SHOW_COMMENT);
-        const comments = [];
-        while (walker.nextNode()) comments.push(walker.currentNode);
-        comments.forEach(c => c.remove());
-
-        return clone.innerHTML;
-      });
-
-      const cleaned = html
-        .replace(/\s+/g, ' ')           // Collapse whitespace
-        .replace(/>\s+</g, '><')         // Remove space between tags
-        .trim();
-
-      console.log(`[Intelligence] Fetched ${url} — cleaned HTML: ${cleaned.length} chars`);
-
-      // Truncate if too long for AI
-      if (cleaned.length > MAX_HTML_LENGTH) {
-        console.log(`[Intelligence] Truncating to ${MAX_HTML_LENGTH} chars`);
-        return cleaned.substring(0, MAX_HTML_LENGTH);
+      } catch (err) {
+        await browser.close();
+        // If proxy failed with connection error, try direct
+        const isProxyError = currentProxy && (
+          err.message.includes('ERR_TUNNEL') ||
+          err.message.includes('ERR_PROXY') ||
+          err.message.includes('ERR_CONNECTION') ||
+          err.message.includes('TIMEOUT') ||
+          err.message.includes('net::')
+        );
+        if (isProxyError && attempts.indexOf(null) >= 0) {
+          console.warn(`[Intelligence] Proxy failed (${err.message}), retrying direct...`);
+          continue;
+        }
+        throw err;
+      } finally {
+        // Close only if not already closed in catch
+        try { await browser.close(); } catch { /* already closed */ }
       }
-
-      return cleaned;
-
-    } finally {
-      await browser.close();
     }
   }
 
