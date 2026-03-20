@@ -9,11 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: {
-        globPatterns: [],
-        navigateFallback: null,
-        runtimeCaching: [],
-      },
+      selfDestroying: true,
       devOptions: {
         enabled: true
       },
