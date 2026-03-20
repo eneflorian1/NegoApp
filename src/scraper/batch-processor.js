@@ -35,8 +35,8 @@ class BatchProcessor extends EventEmitter {
 
     this.options = {
       maxRevealsPerProxy: options.maxRevealsPerProxy ?? 3,
-      delayMinMs: options.delayMinMs ?? (options.delayBetweenRevealsMs?.[0] ?? 45000),
-      delayMaxMs: options.delayMaxMs ?? (options.delayBetweenRevealsMs?.[1] ?? 90000),
+      delayMinMs: options.delayMinMs ?? (options.delayBetweenRevealsMs?.[0] ?? 15000),
+      delayMaxMs: options.delayMaxMs ?? (options.delayBetweenRevealsMs?.[1] ?? 25000),
       maxConcurrent: options.maxConcurrent ?? 1,
       useProxy: options.useProxy ?? true,
       headless: options.headless ?? true,

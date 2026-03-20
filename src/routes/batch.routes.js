@@ -14,7 +14,7 @@ export default function createBatchRoutes({ proxyManager, domainStrategy }) {
   router.post('/batch/start', async (req, res) => {
     const {
       listings, domain, useProxy = false,
-      maxRevealsPerProxy = 3, delayMin = 45000, delayMax = 90000,
+      maxRevealsPerProxy = 3, delayMin = 15000, delayMax = 25000,
     } = req.body;
 
     if (!listings || !Array.isArray(listings) || listings.length === 0) {

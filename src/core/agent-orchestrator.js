@@ -164,7 +164,7 @@ class AgentOrchestrator {
         {
           useProxy,
           maxRevealsPerProxy: 3,
-          delayBetweenRevealsMs: [45000, 90000],
+          delayBetweenRevealsMs: [15000, 25000],
           retryFailedOnce: true,
           ...batchOptions,
         }
