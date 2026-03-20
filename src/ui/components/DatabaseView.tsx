@@ -191,6 +191,7 @@ export default function DatabaseView() {
 // ────────────────────────────────────────────────────────────────
 
 function MissionCard({ mission, isExpanded, onToggle, onDelete, onStop }: {
+  key?: React.Key;
   mission: Mission;
   isExpanded: boolean;
   onToggle: () => void;

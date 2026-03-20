@@ -74,7 +74,7 @@ class SiteIntelligence {
     }
 
     if (!this.gemini.isAvailable) {
-      throw new Error(`Cannot discover strategy for ${domain}: Gemini API key not configured. Add GEMINI_API_KEY to .env`);
+      throw new Error(`Cannot discover strategy for ${domain}: Gemini API key not configured. Set it in Settings.`);
     }
 
     console.log(`\n[Intelligence] ══════════════════════════════════════`);

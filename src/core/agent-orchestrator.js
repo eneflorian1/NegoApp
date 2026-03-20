@@ -64,7 +64,14 @@ class AgentOrchestrator {
       batchOptions = {},
       personality = 'diplomat',
       onPhoneRevealed = null,
+      geminiClient = null,
     } = params;
+
+    // Use per-user gemini client if provided (has the user's API key from DB)
+    const activeGemini = geminiClient || this.gemini;
+    const activeSiteIntelligence = geminiClient
+      ? new SiteIntelligence({ geminiClient: activeGemini, domainStrategy: this.domainStrategy, proxyManager: this.proxyManager })
+      : this.siteIntelligence;
 
     // Determine domain from URL
     const urlObj = new URL(url);
@@ -102,7 +109,7 @@ class AgentOrchestrator {
         mission.status = 'discovering';
         this._emit('mission:updated', mission);
 
-        strategy = await this.siteIntelligence.discover(domain, { categoryUrl: url });
+        strategy = await activeSiteIntelligence.discover(domain, { categoryUrl: url });
         this._step(mission, 'strategy', `Strategy discovered and cached for ${domain} (v${strategy.version})`);
       } else {
         this._step(mission, 'strategy', `Using cached strategy for ${domain} (v${strategy.version}, success: ${Math.round(strategy.successRate * 100)}%)`);
@@ -251,8 +258,12 @@ class AgentOrchestrator {
 
     // Ensure strategy
     let strategy = this.domainStrategy.load(domain);
-    if (!strategy && this.gemini.isAvailable) {
-      strategy = await this.siteIntelligence.discover(domain, { listingUrl: url });
+    const singleGemini = params.geminiClient || this.gemini;
+    if (!strategy && singleGemini.isAvailable) {
+      const si = params.geminiClient
+        ? new SiteIntelligence({ geminiClient: singleGemini, domainStrategy: this.domainStrategy, proxyManager: this.proxyManager })
+        : this.siteIntelligence;
+      strategy = await si.discover(domain, { listingUrl: url });
     }
 
     // Import PhoneRevealer for single use

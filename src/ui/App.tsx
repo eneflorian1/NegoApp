@@ -13,8 +13,9 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AnimatePresence } from 'motion/react';
-import { Lead, OrchestratorTask, Config, MarketStats, ServiceStatus } from './types';
+import { OrchestratorTask, MarketStats } from './types';
 import { MOCK_MARKET_STATS } from './mockData';
+import { useAppData } from './hooks/useAppData';
 
 import DashboardView from './components/DashboardView';
 import InboxView from './components/InboxView';
@@ -34,7 +35,6 @@ export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Check if already logged in on mount
   useEffect(() => {
     fetch('/api/auth/me', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
@@ -73,92 +73,13 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
     sessionStorage.setItem('activeTab', tab);
     setActiveTabState(tab);
   };
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [marketStats] = useState<MarketStats[]>(MOCK_MARKET_STATS);
+
+  const { leads, config, setConfig, configLoaded, serviceStatus, toggleBotActive, deleteLead } = useAppData();
+
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<OrchestratorTask[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [serviceStatus, setServiceStatus] = useState<ServiceStatus>({
-    whatsapp: { connected: false, initializing: false, phone: null, name: null, hasQR: false, error: null },
-    agentmail: { connected: false, error: null },
-  });
-  const [config, setConfig] = useState<Config>({
-    geminiApiKey: '',
-    agentMailApiKey: '',
-    whatsappConnected: true,
-    autoPilotEnabled: false,
-    requestLocationConfirmation: true,
-    meetingAddress: '',
-    autosendAddress: false,
-    defaultPersonality: 'diplomat',
-    whatsappSystemPrompt: "Ești o persoană reală care vorbește pe WhatsApp cu o cunoștință.\n\nREGULI:\n- Răspunde cât mai natural, scurt și la obiect\n- Folosește un ton relaxat, prietenos\n- Nu menționa sub nicio formă că ești o inteligență artificială\n- Răspunde în limba în care ești abordat\n- Negociază prețuri cu diplomație și răbdare",
-    emailSystemPrompt: "Ești un agent AI expert în negociere și cumpărare de produse/servicii.\n\nOBIECTIVE:\n- Negociază prețuri mai mici cu diplomație\n- Fii politicos dar ferm în negociere\n- Propune contra-oferte rezonabile (10-25% reducere)\n- Răspunde în limba în care ești abordat\n- Menține un ton profesional dar prietenos",
-    whatsappScenario: 'universal',
-    emailScenario: 'universal',
-    yoloDefaults: {
-      autoNegThreshold: 10,
-      modaExcludedBrands: 'Zara, H&M',
-      electroniceMinWarrantyMonths: 12
-    }
-  });
-  const [configLoaded, setConfigLoaded] = useState(false);
-
-  const toggleBotActive = async (leadId: string) => {
-    const lead = leads.find(l => l.id === leadId);
-    if (!lead) return;
-    const updated = !lead.isBotActive;
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, isBotActive: updated } : l));
-    try {
-      await fetch(`/api/leads/${leadId}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isBotActive: updated }),
-      });
-    } catch { /* ignore */ }
-  };
-
-  const deleteLead = async (leadId: string) => {
-    setLeads(prev => prev.filter(l => l.id !== leadId));
-    if (selectedLeadId === leadId) setSelectedLeadId('');
-    try {
-      await fetch(`/api/leads/${leadId}`, { method: 'DELETE', credentials: 'include' });
-    } catch { /* ignore */ }
-  };
-
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const res = await fetch('/api/leads', { credentials: 'include' });
-        if (res.ok) setLeads(await res.json());
-      } catch { /* ignore */ }
-    };
-    fetchLeads();
-    const interval = setInterval(fetchLeads, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/config', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(saved => {
-        if (saved && Object.keys(saved).length > 0) setConfig(prev => ({ ...prev, ...saved }));
-        setConfigLoaded(true);
-      })
-      .catch(() => setConfigLoaded(false));
-  }, []);
-
-  useEffect(() => {
-    const poll = async () => {
-      try {
-        const res = await fetch('/api/services/status', { credentials: 'include' });
-        if (res.ok) setServiceStatus(await res.json());
-      } catch { /* ignore */ }
-    };
-    poll();
-    const interval = setInterval(poll, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const [marketStats] = useState<MarketStats[]>(MOCK_MARKET_STATS);
 
   const navItems = [
     { id: 'orchestrator', label: 'Orchestrator', icon: <Zap className="w-5 h-5" /> },

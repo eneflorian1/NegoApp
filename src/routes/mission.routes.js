@@ -3,6 +3,7 @@
  */
 import { Router } from 'express';
 import MissionRepo from '../db/models/Mission.js';
+import ConfigRepo from '../db/models/Config.js';
 import { autoContactSeller } from '../core/contact-service.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -58,6 +59,10 @@ export default function createMissionRoutes({ orchestrator, gemini, whatsapp }) 
     try { domain = new URL(url).hostname.replace('www.', ''); }
     catch { return res.status(400).json({ error: 'Invalid URL' }); }
 
+    // Load user's Gemini API key from DB (Settings)
+    const cfg = ConfigRepo.load(userId);
+    const userGemini = gemini.forKey(cfg.geminiApiKey);
+
     const mission = MissionRepo.create({
       userId,
       mode: 'category',
@@ -71,13 +76,14 @@ export default function createMissionRoutes({ orchestrator, gemini, whatsapp }) 
       try {
         const fullMission = await orchestrator.executeMission({
           url, domain, useProxy, maxPages, maxListings, maxReveals,
+          geminiClient: userGemini,
           onPhoneRevealed: async (result) => {
             mission.leadsContacted = (mission.leadsContacted || 0) + 1;
             if (!mission.results) mission.results = [];
             mission.results.push(result);
             mission.updatedAt = new Date().toISOString();
             MissionRepo.save();
-            if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+            if (result.phone) await autoContactSeller(result, { gemini: userGemini, whatsapp: waClient, userId });
           },
         });
         mission.results = fullMission.reveals || [];
