@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, ExternalLink, Phone, TrendingUp, ChevronLeft, ArrowRight, X, Send, MessageSquare, Zap, BarChart3, Trash2, PlayCircle } from 'lucide-react';
+import { Search, Filter, ExternalLink, Phone, TrendingUp, ChevronLeft, ArrowRight, X, Send, MessageSquare, Zap, BarChart3, Trash2, PlayCircle, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import { LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lead, MarketStats } from '../types';
@@ -8,6 +8,31 @@ import { getStatusStyle, parsePrice } from '../helpers';
 export default function LeadsView({ leads, marketStats, selectedLeadId, setSelectedLeadId, onDeleteLead }: { leads: Lead[], marketStats: MarketStats[], selectedLeadId: string | null, setSelectedLeadId: (id: string) => void, onDeleteLead: (id: string) => void, key?: string }) {
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false);
   const [startingConvoId, setStartingConvoId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const allSelected = leads.length > 0 && selectedIds.size === leads.length;
+  const someSelected = selectedIds.size > 0 && selectedIds.size < leads.length;
+
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(leads.map(l => l.id)));
+  };
+
+  const deleteSelected = () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Sigur vrei să ștergi ${selectedIds.size} lead-uri?`)) return;
+    selectedIds.forEach(id => onDeleteLead(id));
+    setSelectedIds(new Set());
+  };
   const selectedLead = leads.find(l => l.id === selectedLeadId);
   const stats = marketStats.find(s =>
     selectedLead?.title.toLowerCase().includes(s.query.toLowerCase()) ||
@@ -21,8 +46,22 @@ export default function LeadsView({ leads, marketStats, selectedLeadId, setSelec
         className="flex-1 glass-panel rounded-2xl overflow-hidden self-start"
       >
         <div className="p-4 lg:p-6 border-b border-zinc-800 flex items-center justify-between">
-          <h3 className="text-lg font-medium">Extracted Leads</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-medium">Extracted Leads</h3>
+            {selectedIds.size > 0 && (
+              <span className="text-xs text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-md">{selectedIds.size} selectate</span>
+            )}
+          </div>
           <div className="flex gap-2">
+            {selectedIds.size > 0 && (
+              <button
+                onClick={deleteSelected}
+                className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg text-sm font-medium text-red-400 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Șterge ({selectedIds.size})
+              </button>
+            )}
             <button className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 border border-zinc-800"><Filter className="w-4 h-4" /></button>
             <button className="hidden sm:block px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors">Export CSV</button>
           </div>
@@ -31,6 +70,11 @@ export default function LeadsView({ leads, marketStats, selectedLeadId, setSelec
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+                <th className="pl-4 lg:pl-6 pr-0 py-4 w-8">
+                  <button onClick={toggleAll} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                    {allSelected ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : someSelected ? <MinusSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4" />}
+                  </button>
+                </th>
                 <th className="px-4 lg:px-6 py-4 font-medium">Seller</th>
                 <th className="hidden sm:table-cell px-6 py-4 font-medium">Product</th>
                 <th className="px-4 lg:px-6 py-4 font-medium">Price</th>
@@ -49,6 +93,11 @@ export default function LeadsView({ leads, marketStats, selectedLeadId, setSelec
                   className={`cursor-pointer transition-colors ${selectedLeadId === lead.id ? 'bg-indigo-600/10' : 'hover:bg-zinc-800/20'
                     }`}
                 >
+                  <td className="pl-4 lg:pl-6 pr-0 py-4 w-8">
+                    <button onClick={(e) => toggleSelect(lead.id, e)} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                      {selectedIds.has(lead.id) ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4" />}
+                    </button>
+                  </td>
                   <td className="px-4 lg:px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-xs font-bold text-indigo-400">
