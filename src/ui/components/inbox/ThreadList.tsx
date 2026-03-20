@@ -116,7 +116,7 @@ export default function ThreadList({
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(lead.id); }}
-                className="absolute right-2 top-2 z-10 p-1.5 rounded-lg bg-zinc-900/80 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                className="absolute right-2 top-2 z-10 p-1.5 rounded-lg bg-zinc-900/80 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

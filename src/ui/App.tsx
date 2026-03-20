@@ -205,6 +205,21 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
             <h1 className="text-lg font-bold">{navItems.find(n => n.id === activeTab)?.label || 'Settings'}</h1>
           </div>
           <div className="flex items-center gap-3">
+            {/* Auto-Pilot Switch */}
+            <div className="flex items-center gap-1.5 sm:mr-2">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase hidden sm:inline">Auto-Pilot</span>
+              <span className="text-[10px] font-bold text-zinc-500 uppercase sm:hidden">Auto</span>
+              <button
+                onClick={() => setConfig({ ...config, autoPilotEnabled: !config.autoPilotEnabled })}
+                className={`w-10 h-5 rounded-full relative transition-colors flex-shrink-0 flex items-center ${config.autoPilotEnabled ? 'bg-indigo-600' : 'bg-zinc-700'}`}
+              >
+                <motion.div
+                  animate={{ x: config.autoPilotEnabled ? 22 : 2 }}
+                  className="w-4 h-4 bg-white rounded-full absolute"
+                />
+              </button>
+            </div>
+
             {/* WhatsApp LED */}
             <div className="flex items-center gap-1.5">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${serviceStatus.whatsapp.connected ? 'bg-emerald-500 animate-pulse' : serviceStatus.whatsapp.initializing ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`} />
