@@ -1,8 +1,8 @@
 {
   "domain": "olx.ro",
   "version": 1,
-  "lastUpdated": "2026-03-18",
-  "successRate": 0.7737383218761242,
+  "lastUpdated": "2026-03-20",
+  "successRate": 0.7963644896885118,
   "status": "degraded",
   "auth": {
     "type": "cookie_session",

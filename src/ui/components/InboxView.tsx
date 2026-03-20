@@ -131,7 +131,9 @@ export default function InboxView({ leads, selectedLeadId, setSelectedLeadId, on
     try {
       await fetch(`/api/leads/${leadId}/start-conversation`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: '{}',
       });
     } catch { /* ignore */ }
     finally { setStartingConvoId(null); }

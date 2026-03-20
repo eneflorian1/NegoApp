@@ -50,7 +50,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
               mission.status = result.success ? 'completed' : 'error';
               mission.updatedAt = new Date().toISOString();
               MissionRepo.save();
-              if (result.success) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+              if (result.success) await autoContactSeller(result, { gemini, whatsapp, userId });
             } catch (err) {
               mission.status = 'error';
               mission.results = [{ success: false, error: err.message, url }];
@@ -93,7 +93,7 @@ export default function createChatRoutes({ orchestrator, gemini, proxyManager, s
                   mission.results.push(result);
                   mission.updatedAt = new Date().toISOString();
                   MissionRepo.save();
-                  if (result.phone) await autoContactSeller(result, { gemini, whatsapp: waClient, userId });
+                  if (result.phone) await autoContactSeller(result, { gemini, whatsapp, userId });
                 }
               });
               mission.results = fullMission.reveals || [];

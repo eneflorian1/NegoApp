@@ -37,6 +37,75 @@ export default function createLeadsRoutes({ whatsapp, gemini }) {
     res.json({ success: true });
   });
 
+  // ─── Messages per lead ────────────────────────────────────────────────────
+  router.get('/leads/:id/messages', (req, res) => {
+    const lead = LeadRepo.findById(req.params.id);
+    if (!lead || lead.userId !== req.user.id) return res.status(404).json({ error: 'Lead not found' });
+    res.json(MessageRepo.getByLeadId(req.params.id));
+  });
+
+  router.post('/leads/:id/messages', async (req, res) => {
+    const lead = LeadRepo.findById(req.params.id);
+    if (!lead || lead.userId !== req.user.id) return res.status(404).json({ error: 'Lead not found' });
+
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'text is required' });
+
+    try {
+      const chatId = lead.whatsappId || lead.phoneNumber;
+      const channel = lead.channel || 'whatsapp';
+
+      if (channel === 'whatsapp') {
+        const waClient = whatsapp.getClient ? whatsapp.getClient(req.user.id) : whatsapp;
+        if (waClient?.isConnected) await waClient.sendMessage(chatId, text);
+      }
+
+      const message = MessageRepo.create({ userId: req.user.id, leadId: lead.id, sender: 'me', text, channel, to: chatId });
+      lead.lastMessage = text;
+      LeadRepo.save();
+      res.json(message);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  router.delete('/leads/:id/messages', (req, res) => {
+    const lead = LeadRepo.findById(req.params.id);
+    if (!lead || lead.userId !== req.user.id) {
+      // Lead already deleted — just clean up orphan messages
+      MessageRepo.deleteByLeadId(req.params.id);
+      return res.json({ success: true });
+    }
+    MessageRepo.deleteByLeadId(req.params.id);
+    res.json({ success: true });
+  });
+
+  // ─── Mark as read ────────────────────────────────────────────────────────
+  router.post('/leads/:id/read', (req, res) => {
+    const lead = LeadRepo.findById(req.params.id);
+    if (!lead || lead.userId !== req.user.id) return res.status(404).json({ error: 'Lead not found' });
+    lead.unreadCount = 0;
+    LeadRepo.save();
+    res.json({ success: true });
+  });
+
+  // ─── Lead metadata (unread counts, latest timestamps) ───────────────────
+  router.get('/leads/meta', (req, res) => {
+    const userLeads = LeadRepo.getAll(req.user.id);
+    const meta = {};
+    for (const lead of userLeads) {
+      const msgs = MessageRepo.getByLeadId(lead.id);
+      const latest = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+      meta[lead.id] = {
+        unread: lead.unreadCount || 0,
+        latestTs: latest?.timestamp || lead.createdAt,
+        latestText: latest?.text || '',
+        latestSender: latest?.sender || '',
+      };
+    }
+    res.json(meta);
+  });
+
   router.post('/leads/:id/send-address', async (req, res) => {
     const lead = LeadRepo.findById(req.params.id);
     if (!lead || lead.userId !== req.user.id) return res.status(404).json({ error: 'Lead not found' });
@@ -81,7 +150,7 @@ export default function createLeadsRoutes({ whatsapp, gemini }) {
     try {
       const cfg = ConfigRepo.load(req.user.id);
       const userGemini = gemini.forKey(cfg.geminiApiKey);
-      let replyText = req.body.text;
+      let replyText = req.body?.text;
 
       if (!replyText && userGemini.isAvailable) {
         replyText = await generateFirstMessage(userGemini, {

@@ -27,7 +27,19 @@ export default function createConfigRoutes({ whatsapp, agentmail, gemini, orches
   router.post('/config', async (req, res) => {
     try {
       const userId = req.user.id;
-      const cfg = req.body;
+      const existing = ConfigRepo.load(userId);
+      const incoming = req.body;
+
+      // Protect API keys: never overwrite a non-empty key with an empty/shorter value
+      const protectedKeys = ['geminiApiKey', 'agentMailApiKey'];
+      for (const key of protectedKeys) {
+        if (existing[key] && existing[key].length > 5 && (!incoming[key] || incoming[key].length <= 5)) {
+          incoming[key] = existing[key];
+        }
+      }
+
+      // Merge: existing values are preserved if not present in incoming
+      const cfg = { ...existing, ...incoming };
       ConfigRepo.save(userId, cfg);
       if (cfg.agentMailApiKey && cfg.agentMailApiKey.length > 5 && !agentmail.isConnected) {
         agentmail.connect(cfg.agentMailApiKey).catch(err => {

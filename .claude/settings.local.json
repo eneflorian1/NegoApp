@@ -31,7 +31,10 @@
       "Bash(node --check src/channels/whatsapp-handler.js src/core/contact-service.js src/routes/leads.routes.js)",
       "Bash(node:*)",
       "Bash(curl:*)",
-      "Bash(git -C /c/Users/Admin/Documents/GitHub/NegoApp diff src/scraper/olx-virtual-browser.js)"
+      "Bash(git -C /c/Users/Admin/Documents/GitHub/NegoApp diff src/scraper/olx-virtual-browser.js)",
+      "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp -name *.json -path */data/*)",
+      "Bash(find /c/Users/Admin/Documents/GitHub/NegoApp -maxdepth 2 -name *.js -o -name *.sh)",
+      "Bash(ls:*)"
     ]
   }
 }

@@ -236,11 +236,11 @@ function AppContent({ user, onLogout }: { user: AuthUser; onLogout: () => void }
           </div>
         </header>
 
-        <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'orchestrator' ? 'overflow-hidden' : 'overflow-y-auto p-4 lg:p-8 pb-24 lg:pb-12'} custom-scrollbar`}>
+        <div className={`flex-1 min-h-0 flex flex-col ${activeTab === 'orchestrator' || activeTab === 'inbox' ? 'overflow-hidden' : 'overflow-y-auto p-4 lg:p-8 pb-24 lg:pb-12'} custom-scrollbar`}>
           <div className="w-full flex-1 flex flex-col p-4 lg:p-8 pb-24 lg:pb-12" style={{ display: activeTab === 'orchestrator' ? 'flex' : 'none' }}>
             <OrchestratorView config={config} tasks={tasks} setTasks={setTasks} />
           </div>
-          <div style={{ display: activeTab === 'inbox' ? 'block' : 'none' }}>
+          <div className="w-full flex-1 flex flex-col p-4 lg:p-8 pb-24 lg:pb-12" style={{ display: activeTab === 'inbox' ? 'flex' : 'none' }}>
             <InboxView
               leads={leads}
               selectedLeadId={selectedLeadId}
