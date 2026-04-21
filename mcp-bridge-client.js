@@ -16,6 +16,11 @@ import WebSocket from 'ws';
 
 const BRIDGE_URL = process.env.BRIDGE_URL || 'ws://localhost:5000/ws/mcp-bridge';
 const NEGO_API = process.env.NEGO_API || 'http://localhost:3001';
+const NEGO_USER = process.env.NEGO_USER || 'a';
+const NEGO_PASS = process.env.NEGO_PASS || '123456';
+
+// Auth token (obtained on startup via /api/auth/login)
+let authToken = null;
 
 // ─── Tool Definitions ────────────────────────────────────────────────────────
 
@@ -174,14 +179,54 @@ const TOOLS = [
   },
 ];
 
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+async function login() {
+  console.log(`[Bridge] Logging in to NegoApp as "${NEGO_USER}"...`);
+  try {
+    const res = await fetch(`${NEGO_API}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: NEGO_USER, password: NEGO_PASS }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Login failed (${res.status}): ${text}`);
+    }
+    // Extract token from Set-Cookie header
+    const cookies = res.headers.getSetCookie?.() || [];
+    for (const cookie of cookies) {
+      const match = cookie.match(/token=([^;]+)/);
+      if (match) {
+        authToken = match[1];
+        console.log('[Bridge] ✅ Authenticated via cookie');
+        return;
+      }
+    }
+    // Fallback: try response body
+    const body = await res.json().catch(() => null);
+    if (body?.token) {
+      authToken = body.token;
+      console.log('[Bridge] ✅ Authenticated via response token');
+      return;
+    }
+    console.warn('[Bridge] ⚠️ Login succeeded but no token found in cookie/response');
+  } catch (err) {
+    console.error('[Bridge] ❌ Auth failed:', err.message);
+    console.log('[Bridge] Continuing without auth — some endpoints may fail');
+  }
+}
+
 // ─── Tool Handlers ───────────────────────────────────────────────────────────
 
 async function apiFetch(path, options = {}) {
   const url = `${NEGO_API}${path}`;
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options,
-  });
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+    headers['Cookie'] = `token=${authToken}`;
+  }
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`API ${options.method || 'GET'} ${path} failed (${res.status}): ${text}`);
@@ -380,11 +425,13 @@ console.log(`
 ║  NegoApp MCP Bridge Client              ║
 ║  Bridge URL: ${BRIDGE_URL.padEnd(27)}║
 ║  NegoApp API: ${NEGO_API.padEnd(26)}║
+║  User: ${NEGO_USER.padEnd(34)}║
 ║  Tools: ${String(TOOLS.length).padEnd(33)}║
 ╚══════════════════════════════════════════╝
 `);
 
-connect();
+// Login first, then connect bridge
+login().then(() => connect());
 
 // Graceful shutdown
 process.on('SIGINT', () => {
