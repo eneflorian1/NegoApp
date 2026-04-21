@@ -193,24 +193,27 @@ async function login() {
       const text = await res.text().catch(() => '');
       throw new Error(`Login failed (${res.status}): ${text}`);
     }
-    // Extract token from Set-Cookie header
-    const cookies = res.headers.getSetCookie?.() || [];
-    for (const cookie of cookies) {
-      const match = cookie.match(/token=([^;]+)/);
-      if (match) {
-        authToken = match[1];
-        console.log('[Bridge] ✅ Authenticated via cookie');
-        return;
-      }
+
+    // Extract token from Set-Cookie header (works on all Node.js versions)
+    const setCookie = res.headers.get('set-cookie') || '';
+    const tokenMatch = setCookie.match(/token=([^;]+)/);
+    if (tokenMatch) {
+      authToken = tokenMatch[1];
+      console.log('[Bridge] ✅ Authenticated (token from cookie)');
+      // Consume body to avoid leak
+      await res.text().catch(() => {});
+      return;
     }
-    // Fallback: try response body
+
+    // Fallback: check response body for token
     const body = await res.json().catch(() => null);
     if (body?.token) {
       authToken = body.token;
-      console.log('[Bridge] ✅ Authenticated via response token');
+      console.log('[Bridge] ✅ Authenticated (token from body)');
       return;
     }
-    console.warn('[Bridge] ⚠️ Login succeeded but no token found in cookie/response');
+
+    console.warn('[Bridge] ⚠️ Login succeeded but no token found — API calls may fail');
   } catch (err) {
     console.error('[Bridge] ❌ Auth failed:', err.message);
     console.log('[Bridge] Continuing without auth — some endpoints may fail');
